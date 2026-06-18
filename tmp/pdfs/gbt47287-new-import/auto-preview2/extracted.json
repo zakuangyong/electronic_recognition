@@ -1,0 +1,1762 @@
+[
+  {
+    "id": "S00303",
+    "label": "带自耦变压器的启动器",
+    "english": "Starter with auto-transformer",
+    "component_type": "电动机启动器",
+    "shape_type": "圆,等边三角形,正方形",
+    "function_type": "Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00303",
+    "prefix": "31-40",
+    "pdf_page": 1,
+    "printed_page": 31,
+    "crop_box": [
+      629,
+      1200,
+      850,
+      1420
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00303.png"
+  },
+  {
+    "id": "S00304",
+    "label": "带可控硅整流器的调节 - 启动器",
+    "english": "Starter-regulator with thyristors",
+    "component_type": "电动机启动器",
+    "shape_type": "箭头,等边三角形,正方形",
+    "function_type": "Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00304",
+    "prefix": "31-40",
+    "pdf_page": 1,
+    "printed_page": 31,
+    "crop_box": [
+      629,
+      2297,
+      850,
+      2501
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00304.png"
+  },
+  {
+    "id": "S00305",
+    "label": "驱动器件 - 般符号;继电器线圈 - 般符号",
+    "english": "Operating device ， general symbol ； Relay coil ， general symbol",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00305",
+    "prefix": "31-40",
+    "pdf_page": 2,
+    "printed_page": 32,
+    "crop_box": [
+      597,
+      657,
+      817,
+      935
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00305.png"
+  },
+  {
+    "id": "S00307",
+    "label": "驱动器件;继电器线圈 （ 组合表示法 ）",
+    "english": "Operating device ； Relay coil (attached representation)",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00307",
+    "prefix": "31-40",
+    "pdf_page": 2,
+    "printed_page": 32,
+    "crop_box": [
+      597,
+      2218,
+      935,
+      2467
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00307.png"
+  },
+  {
+    "id": "S00311",
+    "label": "缓慢释放继电器线圈",
+    "english": "Relay coil of a slow releasing relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00311",
+    "prefix": "31-40",
+    "pdf_page": 3,
+    "printed_page": 33,
+    "crop_box": [
+      629,
+      657,
+      879,
+      935
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00311.png"
+  },
+  {
+    "id": "S00312",
+    "label": "缓慢吸合继电器线圈",
+    "english": "Relay coil of a slow operating relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00312",
+    "prefix": "31-40",
+    "pdf_page": 3,
+    "printed_page": 33,
+    "crop_box": [
+      629,
+      1880,
+      879,
+      2129
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00312.png"
+  },
+  {
+    "id": "S00313",
+    "label": "延时继电器线圈",
+    "english": "Relay coil of a slow-operating and slow-releasing relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00313",
+    "prefix": "31-40",
+    "pdf_page": 3,
+    "printed_page": 33,
+    "crop_box": [
+      629,
+      3074,
+      909,
+      3353
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00313.png"
+  },
+  {
+    "id": "S00314",
+    "label": "快速继电器线圈",
+    "english": "Relay coil of a high speed relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00314",
+    "prefix": "31-40",
+    "pdf_page": 4,
+    "printed_page": 34,
+    "crop_box": [
+      597,
+      1407,
+      846,
+      1686
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00314.png"
+  },
+  {
+    "id": "S00315",
+    "label": "对交流不敏感继电器线圈",
+    "english": "Relay coil of a relay unaffected by alternating current",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00315",
+    "prefix": "31-40",
+    "pdf_page": 4,
+    "printed_page": 34,
+    "crop_box": [
+      597,
+      2627,
+      817,
+      2877
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00315.png"
+  },
+  {
+    "id": "S00316",
+    "label": "交流继电器线圈",
+    "english": "Relay coil of a n alternating current relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "描述形状,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00316",
+    "prefix": "31-40",
+    "pdf_page": 5,
+    "printed_page": 35,
+    "crop_box": [
+      629,
+      928,
+      909,
+      1148
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00316.png"
+  },
+  {
+    "id": "S00317",
+    "label": "机械谐振继电器线圈",
+    "english": "Relay coil of a mechanically resonant relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "描述形状,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00317",
+    "prefix": "31-40",
+    "pdf_page": 5,
+    "printed_page": 35,
+    "crop_box": [
+      629,
+      2016,
+      968,
+      2295
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00317.png"
+  },
+  {
+    "id": "S00318",
+    "label": "机械保持继电器线圈",
+    "english": "Relay coil of a mechanically latched relay",
+    "component_type": "有或无继电器,自动控制,驱动器件",
+    "shape_type": "等边三角形,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00318",
+    "prefix": "31-40",
+    "pdf_page": 6,
+    "printed_page": 36,
+    "crop_box": [
+      597,
+      657,
+      876,
+      935
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00318.png"
+  },
+  {
+    "id": "S00319",
+    "label": "极化继电器线圈",
+    "english": "Relay coil of a polarized relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00319",
+    "prefix": "31-40",
+    "pdf_page": 6,
+    "printed_page": 36,
+    "crop_box": [
+      597,
+      1798,
+      817,
+      2077
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00319.png"
+  },
+  {
+    "id": "S00320",
+    "label": "自复位极化继电器",
+    "english": "Polarized relay ， self restoring",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "圆点 （ 点 ）,直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00320",
+    "prefix": "31-40",
+    "pdf_page": 6,
+    "printed_page": 36,
+    "crop_box": [
+      597,
+      3075,
+      994,
+      3354
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00320.png"
+  },
+  {
+    "id": "S00321",
+    "label": "带中间位置的极化继电器",
+    "english": "Polarized relay with neutral positlon",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "圆点 （ 点 ）,直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00321",
+    "prefix": "31-40",
+    "pdf_page": 7,
+    "printed_page": 37,
+    "crop_box": [
+      629,
+      1476,
+      1116,
+      1725
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00321.png"
+  },
+  {
+    "id": "S00323",
+    "label": "剩磁继电器线圈",
+    "english": "Relay coil of a remanent relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00323",
+    "prefix": "31-40",
+    "pdf_page": 7,
+    "printed_page": 37,
+    "crop_box": [
+      629,
+      2665,
+      879,
+      2944
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00323.png"
+  },
+  {
+    "id": "S00324",
+    "label": "剩磁继电器线圈",
+    "english": "Relay coil of a remanent relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00324",
+    "prefix": "31-40",
+    "pdf_page": 8,
+    "printed_page": 38,
+    "crop_box": [
+      597,
+      1119,
+      876,
+      1398
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00324.png"
+  },
+  {
+    "id": "S00325",
+    "label": "热继电器驱动器件",
+    "english": "Operating device of a thermal relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00325",
+    "prefix": "31-40",
+    "pdf_page": 8,
+    "printed_page": 38,
+    "crop_box": [
+      597,
+      2378,
+      787,
+      2627
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00325.png"
+  },
+  {
+    "id": "S00326",
+    "label": "电子继电器的驱动器件",
+    "english": "Operating device of an electronlc relay",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00326",
+    "prefix": "31-40",
+    "pdf_page": 9,
+    "printed_page": 39,
+    "crop_box": [
+      629,
+      654,
+      850,
+      933
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00326.png"
+  },
+  {
+    "id": "S00327",
+    "label": "测量继电器;测量继电器有关的器件",
+    "english": "Measurmg relay ； Device related tO a measuring relay",
+    "component_type": "测量继电器,驱动器件",
+    "shape_type": "矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00327",
+    "prefix": "31-40",
+    "pdf_page": 9,
+    "printed_page": 39,
+    "crop_box": [
+      629,
+      1765,
+      909,
+      1954
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00327.png"
+  },
+  {
+    "id": "S00328",
+    "label": "对机壳故障电压;故障时的机壳电位",
+    "english": "Voltage failure tO frame ； Frame potential in C a S e of fault",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00328",
+    "prefix": "31-40",
+    "pdf_page": 9,
+    "printed_page": 39,
+    "crop_box": [
+      648,
+      2928,
+      838,
+      3082
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00328.png"
+  },
+  {
+    "id": "S00329",
+    "label": "剩余电压",
+    "english": "Residual voltage",
+    "component_type": "测量继电器",
+    "shape_type": "字符",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00329",
+    "prefix": "31-40",
+    "pdf_page": 10,
+    "printed_page": 40,
+    "crop_box": [
+      605,
+      1129,
+      700,
+      1206
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00329.png"
+  },
+  {
+    "id": "S00330",
+    "label": "反向电流",
+    "english": "Reverse current",
+    "component_type": "测量继电器",
+    "shape_type": "箭头,字符",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00330",
+    "prefix": "31-40",
+    "pdf_page": 10,
+    "printed_page": 40,
+    "crop_box": [
+      623,
+      2035,
+      740,
+      2104
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00330.png"
+  },
+  {
+    "id": "S00331",
+    "label": "差动电流",
+    "english": "Differential current",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00331",
+    "prefix": "31-40",
+    "pdf_page": 10,
+    "printed_page": 40,
+    "crop_box": [
+      614,
+      2996,
+      684,
+      3077
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00331.png"
+  },
+  {
+    "id": "S00332",
+    "label": "差动电流百分比",
+    "english": "Percentage differential current",
+    "component_type": "测量继电器",
+    "shape_type": "",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00332",
+    "prefix": "41-50",
+    "pdf_page": 1,
+    "printed_page": 41,
+    "crop_box": [
+      631,
+      1066,
+      755,
+      1143
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00332.png"
+  },
+  {
+    "id": "S00333",
+    "label": "对地故障电流",
+    "english": "Earth fault current",
+    "component_type": "测量继电器",
+    "shape_type": "字符,直线",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00333",
+    "prefix": "41-50",
+    "pdf_page": 1,
+    "printed_page": 41,
+    "crop_box": [
+      654,
+      1963,
+      834,
+      2081
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00333.png"
+  },
+  {
+    "id": "S00334",
+    "label": "中性线电流",
+    "english": "Current in the neutral conductor",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00334",
+    "prefix": "41-50",
+    "pdf_page": 1,
+    "printed_page": 41,
+    "crop_box": [
+      654,
+      2984,
+      727,
+      3061
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00334.png"
+  },
+  {
+    "id": "S00335",
+    "label": "两个多相系统中性线之间的电流",
+    "english": "Current between neutrals of tWO polyphase systems",
+    "component_type": "测量继电器",
+    "shape_type": "字符",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00335",
+    "prefix": "41-50",
+    "pdf_page": 2,
+    "printed_page": 42,
+    "crop_box": [
+      637,
+      1070,
+      739,
+      1145
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00335.png"
+  },
+  {
+    "id": "S00336",
+    "label": "相角为时的功率",
+    "english": "Power at phase angle \"alpha\"",
+    "component_type": "测量继电器",
+    "shape_type": "字符",
+    "function_type": "- 功能要素或属性",
+    "application_type": "概念要素或限定符号",
+    "model": "S00336",
+    "prefix": "41-50",
+    "pdf_page": 2,
+    "printed_page": 42,
+    "crop_box": [
+      617,
+      1973,
+      697,
+      2050
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00336.png"
+  },
+  {
+    "id": "S00337",
+    "label": "反时限特性",
+    "english": "lnverse tlme¯lag character1st1C",
+    "component_type": "测量继电器",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00337",
+    "prefix": "41-50",
+    "pdf_page": 2,
+    "printed_page": 42,
+    "crop_box": [
+      597,
+      2858,
+      817,
+      2960
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00337.png"
+  },
+  {
+    "id": "S00338",
+    "label": "零电压继电器",
+    "english": "NO voltage relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00338",
+    "prefix": "41-50",
+    "pdf_page": 3,
+    "printed_page": 43,
+    "crop_box": [
+      629,
+      1047,
+      909,
+      1266
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00338.png"
+  },
+  {
+    "id": "S00339",
+    "label": "逆电流继电器",
+    "english": "Reverse current relay",
+    "component_type": "测量继电器",
+    "shape_type": "箭头,字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00339",
+    "prefix": "41-50",
+    "pdf_page": 3,
+    "printed_page": 43,
+    "crop_box": [
+      629,
+      2103,
+      879,
+      2322
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00339.png"
+  },
+  {
+    "id": "S00340",
+    "label": "欠功率继电器",
+    "english": "Underpower relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00340",
+    "prefix": "41-50",
+    "pdf_page": 4,
+    "printed_page": 44,
+    "crop_box": [
+      597,
+      654,
+      876,
+      874
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00340.png"
+  },
+  {
+    "id": "S00341",
+    "label": "延时过流继电器",
+    "english": "Delayed overcurrent relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,直线,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00341",
+    "prefix": "41-50",
+    "pdf_page": 4,
+    "printed_page": 44,
+    "crop_box": [
+      597,
+      1702,
+      876,
+      1951
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00341.png"
+  },
+  {
+    "id": "S00342",
+    "label": "过流继电器",
+    "english": "C)vercurrent relay",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00342",
+    "prefix": "41-50",
+    "pdf_page": 4,
+    "printed_page": 44,
+    "crop_box": [
+      597,
+      2780,
+      876,
+      3029
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00342.png"
+  },
+  {
+    "id": "S00343",
+    "label": "无功过功率继电器",
+    "english": "()verpower relay for reactive power",
+    "component_type": "测量继电器",
+    "shape_type": "字符,直线,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00343",
+    "prefix": "41-50",
+    "pdf_page": 5,
+    "printed_page": 45,
+    "crop_box": [
+      629,
+      1055,
+      909,
+      1570
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00343.png"
+  },
+  {
+    "id": "S00344",
+    "label": "欠压继电器",
+    "english": "Undervoltage relay",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00344",
+    "prefix": "41-50",
+    "pdf_page": 5,
+    "printed_page": 45,
+    "crop_box": [
+      629,
+      2684,
+      909,
+      3021
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00344.png"
+  },
+  {
+    "id": "S00345",
+    "label": "电流继电器",
+    "english": "Current relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00345",
+    "prefix": "41-50",
+    "pdf_page": 6,
+    "printed_page": 46,
+    "crop_box": [
+      597,
+      1113,
+      846,
+      1391
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00345.png"
+  },
+  {
+    "id": "S00346",
+    "label": "欠阻抗继电器",
+    "english": "Under-impedance relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00346",
+    "prefix": "41-50",
+    "pdf_page": 6,
+    "printed_page": 46,
+    "crop_box": [
+      597,
+      2359,
+      876,
+      2549
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00346.png"
+  },
+  {
+    "id": "S00347",
+    "label": "匝间短路检测继电器",
+    "english": "Relay detecting short-circuits between windings",
+    "component_type": "测量继电器",
+    "shape_type": "字符,半圆,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00347",
+    "prefix": "41-50",
+    "pdf_page": 7,
+    "printed_page": 47,
+    "crop_box": [
+      629,
+      654,
+      879,
+      933
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00347.png"
+  },
+  {
+    "id": "S00348",
+    "label": "断线检测继电器",
+    "english": "l)ivided-conductor detectlon relay",
+    "component_type": "测量继电器",
+    "shape_type": "半圆,直线,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00348",
+    "prefix": "41-50",
+    "pdf_page": 7,
+    "printed_page": 47,
+    "crop_box": [
+      629,
+      1774,
+      909,
+      1964
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00348.png"
+  },
+  {
+    "id": "S00349",
+    "label": "断相故障检测继电器",
+    "english": "Phase failure detection relay",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00349",
+    "prefix": "41-50",
+    "pdf_page": 7,
+    "printed_page": 47,
+    "crop_box": [
+      629,
+      2805,
+      909,
+      3025
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00349.png"
+  },
+  {
+    "id": "S00350",
+    "label": "堵转电流检测继电器",
+    "english": "Locked-rotor detection relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00350",
+    "prefix": "41-50",
+    "pdf_page": 8,
+    "printed_page": 48,
+    "crop_box": [
+      597,
+      1123,
+      876,
+      1402
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00350.png"
+  },
+  {
+    "id": "S00351",
+    "label": "过流继电器",
+    "english": "C)vercurrent relay",
+    "component_type": "测量继电器",
+    "shape_type": "字符,直线,矩形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00351",
+    "prefix": "41-50",
+    "pdf_page": 8,
+    "printed_page": 48,
+    "crop_box": [
+      594,
+      2319,
+      993,
+      2687
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00351.png"
+  },
+  {
+    "id": "S00352",
+    "label": "瓦斯保护器件;气体继电器",
+    "english": "Buchholz protective device ； Gas relay",
+    "component_type": "瓦斯器件,测量继电器",
+    "shape_type": "圆弧,矩形,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00352",
+    "prefix": "41-50",
+    "pdf_page": 9,
+    "printed_page": 49,
+    "crop_box": [
+      629,
+      847,
+      909,
+      1155
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00352.png"
+  },
+  {
+    "id": "S00353",
+    "label": "自动重闭合器件;自动重合闸继电器",
+    "english": "Device for auto-reclosing ； Auto-reclose relay",
+    "component_type": "自动重合器件",
+    "shape_type": "圆,直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00353",
+    "prefix": "41-50",
+    "pdf_page": 9,
+    "printed_page": 49,
+    "crop_box": [
+      629,
+      1985,
+      850,
+      2175
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00353.png"
+  },
+  {
+    "id": "S00354",
+    "label": "接近传感器",
+    "english": "Pr0X1m1ty S e n S O r",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00354",
+    "prefix": "41-50",
+    "pdf_page": 9,
+    "printed_page": 49,
+    "crop_box": [
+      629,
+      3005,
+      791,
+      3225
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00354.png"
+  },
+  {
+    "id": "S00355",
+    "label": "接近传感器件",
+    "english": "Pr0X1mity sensing devlce",
+    "component_type": "接近器件,接触敏感器件",
+    "shape_type": "直线,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00355",
+    "prefix": "41-50",
+    "pdf_page": 10,
+    "printed_page": 50,
+    "crop_box": [
+      597,
+      1195,
+      906,
+      1444
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00355.png"
+  },
+  {
+    "id": "S00356",
+    "label": "容性接近传感器件",
+    "english": "Pr0X1mity sensing capacltlve",
+    "component_type": "接近器件,接触敏感器件",
+    "shape_type": "直线,矩形,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00356",
+    "prefix": "41-50",
+    "pdf_page": 10,
+    "printed_page": 50,
+    "crop_box": [
+      597,
+      2370,
+      994,
+      2619
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00356.png"
+  },
+  {
+    "id": "S00357",
+    "label": "接触传感器",
+    "english": "Touch S e n S O r",
+    "component_type": "接近器件,接触敏感器件",
+    "shape_type": "直线,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00357",
+    "prefix": "61-68",
+    "pdf_page": 1,
+    "printed_page": 51,
+    "crop_box": [
+      629,
+      654,
+      820,
+      874
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00357.png"
+  },
+  {
+    "id": "S00358",
+    "label": "接触敏感开关",
+    "english": "Touch sensltive svvitch",
+    "component_type": "接近器件,开关,接触敏感器件",
+    "shape_type": "直线,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,安装图,概略图",
+    "model": "S00358",
+    "prefix": "61-68",
+    "pdf_page": 1,
+    "printed_page": 51,
+    "crop_box": [
+      629,
+      1652,
+      850,
+      1901
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00358.png"
+  },
+  {
+    "id": "S00359",
+    "label": "接近开关",
+    "english": "Proximity switch",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00359",
+    "prefix": "61-68",
+    "pdf_page": 1,
+    "printed_page": 51,
+    "crop_box": [
+      629,
+      2811,
+      850,
+      3090
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00359.png"
+  },
+  {
+    "id": "S00360",
+    "label": "磁控接近开关",
+    "english": "Proximity switch ， magnetically controlled",
+    "component_type": "接近器件,接触敏感器件",
+    "shape_type": "直线,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00360",
+    "prefix": "61-68",
+    "pdf_page": 2,
+    "printed_page": 52,
+    "crop_box": [
+      597,
+      1242,
+      846,
+      1521
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00360.png"
+  },
+  {
+    "id": "S00361",
+    "label": "铁控接近开关",
+    "english": "Proximity switch ， controlled by iron",
+    "component_type": "接近器件,开关,接触敏感器件",
+    "shape_type": "直线,正方形",
+    "function_type": "B 变量转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00361",
+    "prefix": "61-68",
+    "pdf_page": 2,
+    "printed_page": 52,
+    "crop_box": [
+      597,
+      2421,
+      876,
+      2700
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00361.png"
+  },
+  {
+    "id": "S00362",
+    "label": "熔断器 - 般符号",
+    "english": "Fuse'general symbol",
+    "component_type": "熔断器",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00362",
+    "prefix": "61-68",
+    "pdf_page": 3,
+    "printed_page": 53,
+    "crop_box": [
+      629,
+      783,
+      791,
+      1062
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00362.png"
+  },
+  {
+    "id": "S00363",
+    "label": "熔断器",
+    "english": "Fuse",
+    "component_type": "熔断器",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00363",
+    "prefix": "61-68",
+    "pdf_page": 3,
+    "printed_page": 53,
+    "crop_box": [
+      629,
+      1894,
+      791,
+      2143
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00363.png"
+  },
+  {
+    "id": "S00364",
+    "label": "熔断器;撞击式熔断器",
+    "english": "",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00364",
+    "prefix": "61-68",
+    "pdf_page": 3,
+    "printed_page": 53,
+    "crop_box": [
+      629,
+      3040,
+      850,
+      3289
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00364.png"
+  },
+  {
+    "id": "S00365",
+    "label": "带报警触点熔断器",
+    "english": "Fuse with alarm contact",
+    "component_type": "熔断器",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00365",
+    "prefix": "61-68",
+    "pdf_page": 4,
+    "printed_page": 54,
+    "crop_box": [
+      597,
+      1436,
+      846,
+      1685
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00365.png"
+  },
+  {
+    "id": "S00366",
+    "label": "独立报警熔断器",
+    "english": "Fuse with separate alarm",
+    "component_type": "熔断器",
+    "shape_type": "直线,矩形",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00366",
+    "prefix": "61-68",
+    "pdf_page": 4,
+    "printed_page": 54,
+    "crop_box": [
+      597,
+      2583,
+      846,
+      2832
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00366.png"
+  },
+  {
+    "id": "S00367",
+    "label": "带撞击式熔断器的三极开关",
+    "english": "Three-pole switch with striker fuses",
+    "component_type": "熔断器开关",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护,Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00367",
+    "prefix": "61-68",
+    "pdf_page": 5,
+    "printed_page": 55,
+    "crop_box": [
+      629,
+      916,
+      1086,
+      1313
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00367.png"
+  },
+  {
+    "id": "S00368",
+    "label": "熔断器开关",
+    "english": "Fuse-switch",
+    "component_type": "熔断器开关",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护,Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00368",
+    "prefix": "61-68",
+    "pdf_page": 5,
+    "printed_page": 55,
+    "crop_box": [
+      629,
+      2215,
+      791,
+      2465
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00368.png"
+  },
+  {
+    "id": "S00369",
+    "label": "熔断器式隔离器",
+    "english": "Fuse—disconnector ； Fuse isolator",
+    "component_type": "熔断器开关",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护,Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00369",
+    "prefix": "61-68",
+    "pdf_page": 6,
+    "printed_page": 56,
+    "crop_box": [
+      597,
+      654,
+      758,
+      933
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00369.png"
+  },
+  {
+    "id": "S00370",
+    "label": "熔断器式隔离开关;熔断器式负荷隔离开关",
+    "english": "Fuse switch-disconnector ； ()n-load isolating fuse switch",
+    "component_type": "熔断器开关",
+    "shape_type": "直线,矩形",
+    "function_type": "F 防护,Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00370",
+    "prefix": "61-68",
+    "pdf_page": 6,
+    "printed_page": 56,
+    "crop_box": [
+      597,
+      1780,
+      787,
+      2029
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00370.png"
+  },
+  {
+    "id": "S00371",
+    "label": "火花间隙",
+    "english": "Spark gap",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00371",
+    "prefix": "61-68",
+    "pdf_page": 6,
+    "printed_page": 56,
+    "crop_box": [
+      594,
+      2873,
+      756,
+      3152
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00371.png"
+  },
+  {
+    "id": "S00372",
+    "label": "双火花间隙",
+    "english": "Spark gap, double",
+    "component_type": "制动器,火花间隙",
+    "shape_type": "箭头",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00372",
+    "prefix": "61-68",
+    "pdf_page": 7,
+    "printed_page": 57,
+    "crop_box": [
+      627,
+      1175,
+      760,
+      1425
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00372.png"
+  },
+  {
+    "id": "S00373",
+    "label": "避雷器;电涌保护器",
+    "english": "Surge diverter ； Lightning arrester",
+    "component_type": "制动器",
+    "shape_type": "箭头,矩形",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,网络图,概略图",
+    "model": "S00373",
+    "prefix": "61-68",
+    "pdf_page": 7,
+    "printed_page": 57,
+    "crop_box": [
+      627,
+      2326,
+      788,
+      2606
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00373.png"
+  },
+  {
+    "id": "S00374",
+    "label": "保护用充气放电管",
+    "english": "Protective gas discharge tube",
+    "component_type": "制动器,火花间隙",
+    "shape_type": "箭头,圆,圆点 （ 点 ）",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00374",
+    "prefix": "61-68",
+    "pdf_page": 8,
+    "printed_page": 58,
+    "crop_box": [
+      594,
+      651,
+      816,
+      931
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00374.png"
+  },
+  {
+    "id": "S00375",
+    "label": "保护用对称充气放电管",
+    "english": "Protective gas discharge tube ， symmetric",
+    "component_type": "制动器,火花间隙",
+    "shape_type": "箭头,圆,圆点 （ 点 ）",
+    "function_type": "F 防护",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00375",
+    "prefix": "61-68",
+    "pdf_page": 8,
+    "printed_page": 58,
+    "crop_box": [
+      594,
+      1777,
+      845,
+      2057
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00375.png"
+  },
+  {
+    "id": "S00376",
+    "label": "静态开关 - 般符号",
+    "english": "Static switch ， general symbol",
+    "component_type": "",
+    "shape_type": "",
+    "function_type": "",
+    "application_type": "",
+    "model": "S00376",
+    "prefix": "61-68",
+    "pdf_page": 8,
+    "printed_page": 58,
+    "crop_box": [
+      597,
+      2906,
+      758,
+      3155
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00376.png"
+  },
+  {
+    "id": "S00377",
+    "label": "静态 （ 半导体 ） 接触器",
+    "english": "Static (semiconductor) contactor",
+    "component_type": "接触器,静态开关",
+    "shape_type": "半圆,直线",
+    "function_type": "Q 受控切换或改变",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00377",
+    "prefix": "61-68",
+    "pdf_page": 9,
+    "printed_page": 59,
+    "crop_box": [
+      629,
+      1320,
+      791,
+      1598
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00377.png"
+  },
+  {
+    "id": "S00378",
+    "label": "单向静态开关",
+    "english": "Static switch ， unidirectlonal",
+    "component_type": "静态开关",
+    "shape_type": "等边三角形,直线",
+    "function_type": "K 处理信号或信息",
+    "application_type": "",
+    "model": "S00378",
+    "prefix": "61-68",
+    "pdf_page": 9,
+    "printed_page": 59,
+    "crop_box": [
+      629,
+      2449,
+      909,
+      2757
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00378.png"
+  },
+  {
+    "id": "S00379",
+    "label": "静态继电器 - 般符号",
+    "english": "Static relay'general symbol",
+    "component_type": "静态开关器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00379",
+    "prefix": "61-68",
+    "pdf_page": 10,
+    "printed_page": 60,
+    "crop_box": [
+      597,
+      851,
+      994,
+      1129
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00379.png"
+  },
+  {
+    "id": "S00380",
+    "label": "静态继电器",
+    "english": "Static relay",
+    "component_type": "静态开关器件",
+    "shape_type": "箭头,等边 。 角形,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00380",
+    "prefix": "61-68",
+    "pdf_page": 10,
+    "printed_page": 60,
+    "crop_box": [
+      594,
+      2160,
+      1139,
+      2439
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00380.png"
+  },
+  {
+    "id": "S00381",
+    "label": "静态热过载电器",
+    "english": "Static thermal overload relay",
+    "component_type": "静态开关器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00381",
+    "prefix": "61-68",
+    "pdf_page": 11,
+    "printed_page": 61,
+    "crop_box": [
+      629,
+      654,
+      1293,
+      1050
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00381.png"
+  },
+  {
+    "id": "S00382",
+    "label": "静态继电器",
+    "english": "Static relay",
+    "component_type": "静态开关器件",
+    "shape_type": "直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00382",
+    "prefix": "61-68",
+    "pdf_page": 11,
+    "printed_page": 61,
+    "crop_box": [
+      629,
+      2018,
+      1027,
+      2238
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00382.png"
+  },
+  {
+    "id": "S00383",
+    "label": "电气独立的耦合器件",
+    "english": "Coupling device with electrical separation",
+    "component_type": "耦合器件,静态开关器件",
+    "shape_type": "字符,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00383",
+    "prefix": "61-68",
+    "pdf_page": 12,
+    "printed_page": 62,
+    "crop_box": [
+      597,
+      653,
+      817,
+      932
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00383.png"
+  },
+  {
+    "id": "S00384",
+    "label": "电气独立的光耦合器件",
+    "english": "Coupling device with electrical separatiomoptical",
+    "component_type": "耦合器件,静态开关器件",
+    "shape_type": "字符,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S00384",
+    "prefix": "61-68",
+    "pdf_page": 12,
+    "printed_page": 62,
+    "crop_box": [
+      594,
+      1831,
+      816,
+      2110
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s00384.png"
+  },
+  {
+    "id": "S01413",
+    "label": "多功能开关器件",
+    "english": "Multiple-function switching device",
+    "component_type": "断路器,接触器,绝缘子,可逆",
+    "shape_type": "半圆,直线,正方形",
+    "function_type": "Q 受控切换或改变",
+    "application_type": "电路图,功能图,概略图",
+    "model": "S01413",
+    "prefix": "61-68",
+    "pdf_page": 13,
+    "printed_page": 63,
+    "crop_box": [
+      629,
+      654,
+      791,
+      1021
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01413.png"
+  },
+  {
+    "id": "S01416",
+    "label": "带稳定位置的极化继电器",
+    "english": "Polarized relay ， stable positions",
+    "component_type": "有或无继电器,驱动器件",
+    "shape_type": "圆点 （ 点 ）,直线,矩形",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S01416",
+    "prefix": "61-68",
+    "pdf_page": 13,
+    "printed_page": 63,
+    "crop_box": [
+      629,
+      2120,
+      1116,
+      2399
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01416.png"
+  },
+  {
+    "id": "S01454",
+    "label": "复合开关,- 般符号",
+    "english": "Complex switch ， general symbol",
+    "component_type": "复合开关,开关",
+    "shape_type": "字符,直线,矩形",
+    "function_type": "B 变量转换为信号,S 把手动操作转变为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S01454",
+    "prefix": "61-68",
+    "pdf_page": 14,
+    "printed_page": 64,
+    "crop_box": [
+      597,
+      654,
+      876,
+      933
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01454.png"
+  },
+  {
+    "id": "S01462",
+    "label": "镜像触点",
+    "english": "Mirror contact",
+    "component_type": "触点",
+    "shape_type": "圆点 （ 点 ）,直线",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,功能图,概略图",
+    "model": "S01462",
+    "prefix": "61-68",
+    "pdf_page": 14,
+    "printed_page": 64,
+    "crop_box": [
+      597,
+      1966,
+      728,
+      2245
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01462.png"
+  },
+  {
+    "id": "S01848",
+    "label": "组合式隔离接地开关",
+    "english": "Combined disconnector and earthing switch",
+    "component_type": "隔离开关,接地,开关",
+    "shape_type": "直线",
+    "function_type": "Q 受控切换或改变",
+    "application_type": "电路图,功能图,概略图",
+    "model": "S01848",
+    "prefix": "61-68",
+    "pdf_page": 15,
+    "printed_page": 65,
+    "crop_box": [
+      627,
+      651,
+      936,
+      1107
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01848.png"
+  },
+  {
+    "id": "S01855",
+    "label": "电压回路多挡位选择仪器开关",
+    "english": "Instrument multi-position selector switch for voltage circuit",
+    "component_type": "仪器开关,开关",
+    "shape_type": "字符,矩形",
+    "function_type": "Q 受控切换或改变,s 将手动操作转变为信号",
+    "application_type": "电路图",
+    "model": "S01855",
+    "prefix": "61-68",
+    "pdf_page": 15,
+    "printed_page": 65,
+    "crop_box": [
+      627,
+      2009,
+      1053,
+      2435
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01855.png"
+  },
+  {
+    "id": "S01856",
+    "label": "电流回路多挡位选择仪器开关",
+    "english": "Instrument multl-position selector switch for current circuit",
+    "component_type": "仪器开关,开关",
+    "shape_type": "字符,矩形",
+    "function_type": "Q 受控切换或改变,S 将手动操作转变为信号",
+    "application_type": "电路图",
+    "model": "S01856",
+    "prefix": "61-68",
+    "pdf_page": 16,
+    "printed_page": 66,
+    "crop_box": [
+      594,
+      651,
+      903,
+      990
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01856.png"
+  },
+  {
+    "id": "S01857",
+    "label": "显示终端电流回路的多挡位选择仪器开关",
+    "english": "Instrument multi-position selector switch for current circuit with shown terminals",
+    "component_type": "仪器开关,开关",
+    "shape_type": "字符,矩形",
+    "function_type": "Q 受控切换或改变,S 将手动操作转变为信号",
+    "application_type": "电路图",
+    "model": "S01857",
+    "prefix": "61-68",
+    "pdf_page": 16,
+    "printed_page": 66,
+    "crop_box": [
+      594,
+      2023,
+      1020,
+      2449
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01857.png"
+  },
+  {
+    "id": "S01858",
+    "label": "显示终端电压回路的多挡位选择仪器开关",
+    "english": "Instrument multi-positlon selector switch for voltage circuit with shown terminals",
+    "component_type": "仪器开关,开关",
+    "shape_type": "直线",
+    "function_type": "Q 受控切换或改变,s 将手动操作转变为信号",
+    "application_type": "电路图,概略图",
+    "model": "S01858",
+    "prefix": "61-68",
+    "pdf_page": 17,
+    "printed_page": 67,
+    "crop_box": [
+      627,
+      651,
+      1026,
+      1167
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01858.png"
+  },
+  {
+    "id": "S01911",
+    "label": "延时断开和闭合动断触点",
+    "english": "Break contact ， delayed",
+    "component_type": "触点,开关",
+    "shape_type": "半圆,直线",
+    "function_type": "K 处理信号或信息",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S01911",
+    "prefix": "61-68",
+    "pdf_page": 17,
+    "printed_page": 67,
+    "crop_box": [
+      627,
+      2004,
+      818,
+      2283
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01911.png"
+  },
+  {
+    "id": "S01912",
+    "label": "手动动断触点开关",
+    "english": "Switch ， manually operated ， break contact",
+    "component_type": "触点,开关",
+    "shape_type": "直线",
+    "function_type": "s 把手动操作转换为信号",
+    "application_type": "电路图,接线图,功能图,概略图",
+    "model": "S01912",
+    "prefix": "61-68",
+    "pdf_page": 18,
+    "printed_page": 68,
+    "crop_box": [
+      607,
+      674,
+      919,
+      1103
+    ],
+    "image": "tmp\\pdfs\\gbt47287-new-import\\auto-preview2\\assets\\s01912.png"
+  }
+]

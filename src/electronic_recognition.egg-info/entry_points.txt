@@ -1,0 +1,2 @@
+[console_scripts]
+electronic-recognition = electronic_recognition.cli:main
