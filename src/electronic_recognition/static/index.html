@@ -44,13 +44,37 @@
           <div class="config-card">
             <div><span>视觉模型</span><strong id="modelName">读取中</strong></div>
             <div><span>知识库样本</span><strong id="componentCount">--</strong></div>
-            <div><span>参考图上限</span><strong id="referenceLimit">--</strong></div>
+            <div><span>参考图批大小</span><strong id="referenceLimit">--</strong></div>
           </div>
 
           <button class="primary-button" id="submitButton" disabled>
             <span>开始识别</span><i></i>
           </button>
           <p class="message" id="formMessage" role="alert"></p>
+
+          <section class="knowledge-preview" aria-labelledby="knowledgePreviewTitle">
+            <div class="preview-heading">
+              <div>
+                <p>KNOWLEDGE</p>
+                <h3 id="knowledgePreviewTitle">知识库预览</h3>
+              </div>
+              <span class="preview-count" id="knowledgePreviewCount">加载中</span>
+            </div>
+
+            <label class="preview-search">
+              <span>筛选样本</span>
+              <input
+                id="knowledgeSearch"
+                type="search"
+                placeholder="输入名称、类型或 ID"
+                autocomplete="off"
+              />
+            </label>
+
+            <article class="knowledge-feature hidden" id="knowledgeFeature"></article>
+            <div class="knowledge-gallery hidden" id="knowledgeGallery"></div>
+            <p class="preview-empty hidden" id="knowledgeEmpty"></p>
+          </section>
         </form>
       </aside>
 

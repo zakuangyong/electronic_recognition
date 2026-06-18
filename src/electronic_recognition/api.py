@@ -56,7 +56,7 @@ def config() -> dict[str, object]:
         "api_key_configured": bool(settings.api_key),
         "knowledge_path": str(KNOWLEDGE_PATH),
         "component_count": count,
-        "reference_limit": settings.reference_limit,
+        "reference_batch_size": settings.reference_batch_size,
     }
 
 
@@ -71,6 +71,7 @@ def knowledge_items() -> dict[str, object]:
             {
                 "id": sample.id,
                 "label": sample.label,
+                "component_type": sample.component_type,
                 "image_url": f"/api/knowledge/{sample.id}/image",
             }
             for sample in knowledge.components

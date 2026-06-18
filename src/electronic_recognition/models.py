@@ -9,6 +9,7 @@ class ComponentSample:
     id: str
     label: str
     image_path: str
+    variant_images: list[str] = field(default_factory=list)
     component_type: str = ""
     model: str = ""
     definition: str = ""

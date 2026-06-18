@@ -11,6 +11,7 @@ src/electronic_recognition/llm.py
 src/electronic_recognition/models.py
 src/electronic_recognition/pipeline.py
 src/electronic_recognition/prompts.py
+src/electronic_recognition/title_block_extractor.py
 src/electronic_recognition.egg-info/PKG-INFO
 src/electronic_recognition.egg-info/SOURCES.txt
 src/electronic_recognition.egg-info/dependency_links.txt
@@ -21,3 +22,4 @@ src/electronic_recognition/static/app.js
 src/electronic_recognition/static/index.html
 src/electronic_recognition/static/styles.css
 tests/test_recognition.py
+tests/test_title_block_extractor.py

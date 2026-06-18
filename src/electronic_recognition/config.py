@@ -16,8 +16,9 @@ class Settings:
     http_retries: int = 4
     response_cache_dir: str = "data/cache/model"
     catalog_candidate_limit: int = 20
-    catalog_pool_limit: int = 40
-    reference_limit: int = 12
+    reference_batch_size: int = 12
+    tile_grid: int = 2
+    tile_overlap: float = 0.15
 
     @classmethod
     def from_env(
@@ -42,11 +43,22 @@ class Settings:
             catalog_candidate_limit=int(
                 os.getenv("ER_CATALOG_CANDIDATE_LIMIT", "20")
             ),
-            catalog_pool_limit=int(
-                os.getenv("ER_CATALOG_POOL_LIMIT", "40")
+            reference_batch_size=max(
+                1,
+                int(
+                    os.getenv(
+                        "ER_REFERENCE_BATCH_SIZE",
+                        os.getenv("ER_REFERENCE_LIMIT", "12"),
+                    )
+                ),
             ),
-            reference_limit=int(
-                os.getenv("ER_REFERENCE_LIMIT", "12")
+            tile_grid=min(
+                3,
+                max(1, int(os.getenv("ER_TILE_GRID", "2"))),
+            ),
+            tile_overlap=max(
+                0.0,
+                min(0.45, float(os.getenv("ER_TILE_OVERLAP", "0.15"))),
             ),
         )
 

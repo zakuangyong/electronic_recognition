@@ -1,4 +1,10 @@
-const state = { file: null, result: null };
+const state = {
+  file: null,
+  result: null,
+  knowledgeItems: [],
+  filteredKnowledge: [],
+  selectedKnowledgeId: ""
+};
 const $ = (id) => document.getElementById(id);
 const colors = [
   "#1769aa", "#d1495b", "#138a72", "#8a5cf6", "#d97706",
@@ -11,6 +17,9 @@ const elements = {
   fileType: $("fileType"), remove: $("removeFile"), submit: $("submitButton"),
   message: $("formMessage"), status: $("systemStatus"), model: $("modelName"),
   count: $("componentCount"), referenceLimit: $("referenceLimit"),
+  knowledgeCount: $("knowledgePreviewCount"), knowledgeSearch: $("knowledgeSearch"),
+  knowledgeFeature: $("knowledgeFeature"), knowledgeGallery: $("knowledgeGallery"),
+  knowledgeEmpty: $("knowledgeEmpty"),
   empty: $("emptyState"), loading: $("loadingState"), content: $("resultContent"),
   download: $("downloadButton"), typeTotal: $("typeTotal"),
   instanceTotal: $("instanceTotal"), elapsed: $("elapsedTime"),
@@ -23,23 +32,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   bindEvents();
-  try {
-    const response = await fetch("/api/config");
-    const config = await response.json();
-    if (!response.ok) throw new Error(config.detail || "配置读取失败");
-    elements.status.classList.add("online");
-    elements.status.querySelector("b").textContent = "服务在线";
-    elements.model.textContent = config.model || "未配置";
-    elements.count.textContent = `${config.component_count} 张`;
-    elements.referenceLimit.textContent = `${config.reference_limit} 张`;
-    if (!config.api_key_configured) {
-      elements.message.textContent = "请先在 .env 中配置模型密钥和模型名称。";
-    }
-  } catch (error) {
-    elements.status.classList.add("error");
-    elements.status.querySelector("b").textContent = "连接失败";
-    elements.message.textContent = error.message;
-  }
+  await Promise.all([loadConfig(), loadKnowledge()]);
 }
 
 function bindEvents() {
@@ -54,9 +47,54 @@ function bindEvents() {
   elements.remove.addEventListener("click", clearFile);
   elements.form.addEventListener("submit", analyze);
   elements.download.addEventListener("click", downloadJson);
+  elements.knowledgeSearch.addEventListener("input", applyKnowledgeFilter);
+  elements.knowledgeGallery.addEventListener("click", handleKnowledgeSelect);
   document.querySelectorAll(".tab").forEach((tab) =>
     tab.addEventListener("click", () => activateTab(tab.dataset.tab))
   );
+}
+
+async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const config = await response.json();
+    if (!response.ok) throw new Error(config.detail || "配置读取失败");
+    elements.status.classList.add("online");
+    elements.status.querySelector("b").textContent = "服务在线";
+    elements.model.textContent = config.model || "未配置";
+    elements.count.textContent = `${config.component_count} 张`;
+    elements.referenceLimit.textContent = `${config.reference_batch_size} 张/批`;
+    if (!config.api_key_configured) {
+      elements.message.textContent = "请先在 .env 中配置模型密钥和模型名称。";
+    }
+  } catch (error) {
+    elements.status.classList.add("error");
+    elements.status.querySelector("b").textContent = "连接失败";
+    elements.message.textContent = error.message;
+  }
+}
+
+async function loadKnowledge() {
+  try {
+    const response = await fetch("/api/knowledge");
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || "知识库读取失败");
+    state.knowledgeItems = (payload.items || []).map((item) => ({
+      id: String(item.id || ""),
+      label: String(item.label || "未命名"),
+      componentType: String(item.component_type || ""),
+      imageUrl: String(item.image_url || "")
+    }));
+    applyKnowledgeFilter();
+  } catch (error) {
+    state.knowledgeItems = [];
+    state.filteredKnowledge = [];
+    elements.knowledgeCount.textContent = "不可用";
+    elements.knowledgeFeature.classList.add("hidden");
+    elements.knowledgeGallery.classList.add("hidden");
+    elements.knowledgeEmpty.classList.remove("hidden");
+    elements.knowledgeEmpty.textContent = error.message;
+  }
 }
 
 function setFile(file) {
@@ -88,6 +126,70 @@ function clearResult() {
   elements.loading.classList.add("hidden");
   elements.empty.classList.remove("hidden");
   elements.download.classList.add("hidden");
+}
+
+function applyKnowledgeFilter() {
+  const keyword = elements.knowledgeSearch.value.trim().toLowerCase();
+  const filtered = state.knowledgeItems.filter((item) => {
+    const searchable = [
+      item.id,
+      item.label,
+      item.componentType
+    ].join(" ").toLowerCase();
+    return !keyword || searchable.includes(keyword);
+  });
+  state.filteredKnowledge = filtered;
+  if (!filtered.some((item) => item.id === state.selectedKnowledgeId)) {
+    state.selectedKnowledgeId = filtered[0]?.id || "";
+  }
+  renderKnowledgePreview();
+}
+
+function renderKnowledgePreview() {
+  const total = state.knowledgeItems.length;
+  const filtered = state.filteredKnowledge;
+  const visibleItems = filtered.slice(0, 24);
+  const selected = filtered.find((item) => item.id === state.selectedKnowledgeId) || null;
+  elements.knowledgeCount.textContent = total
+    ? `${visibleItems.length}/${filtered.length}${filtered.length !== total ? `，共 ${total}` : ""}`
+    : "0 项";
+  elements.knowledgeEmpty.classList.toggle("hidden", filtered.length > 0);
+  elements.knowledgeFeature.classList.toggle("hidden", !selected);
+  elements.knowledgeGallery.classList.toggle("hidden", !visibleItems.length);
+  if (!filtered.length) {
+    elements.knowledgeFeature.innerHTML = "";
+    elements.knowledgeGallery.innerHTML = "";
+    elements.knowledgeEmpty.textContent = total
+      ? "没有匹配的知识库样本。"
+      : "当前没有可预览的知识库样本。";
+    return;
+  }
+  if (selected) {
+    elements.knowledgeFeature.innerHTML = `<div class="knowledge-image-wrap">
+        <img src="${escapeHtml(selected.imageUrl)}" alt="${escapeHtml(selected.label)} 参考图" />
+      </div>
+      <div class="knowledge-meta">
+        <strong>${escapeHtml(selected.label)}</strong>
+        <span>${escapeHtml(selected.componentType || "未分类")}</span>
+        <small>ID: ${escapeHtml(selected.id)}</small>
+      </div>`;
+  }
+  elements.knowledgeGallery.innerHTML = visibleItems.map((item) => `<button
+      class="knowledge-thumb${item.id === state.selectedKnowledgeId ? " active" : ""}"
+      type="button"
+      data-knowledge-id="${escapeHtml(item.id)}"
+      aria-pressed="${item.id === state.selectedKnowledgeId ? "true" : "false"}"
+    >
+      <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.label)} 缩略图" />
+      <span>${escapeHtml(item.label)}</span>
+    </button>`).join("");
+}
+
+function handleKnowledgeSelect(event) {
+  const button = event.target.closest("[data-knowledge-id]");
+  if (!button) return;
+  state.selectedKnowledgeId = button.dataset.knowledgeId || "";
+  renderKnowledgePreview();
 }
 
 async function analyze(event) {
@@ -194,9 +296,7 @@ function renderPage(page, groups) {
   const boxes = groups.flatMap((group) =>
     group.instances.filter((item) => item.page === pageNumber).map((item) => {
       const [x0, y0, x1, y1] = item.region;
-      return `<div class="component-box" style="--color:${group.color};left:${x0 / 10}%;top:${y0 / 10}%;width:${(x1 - x0) / 10}%;height:${(y1 - y0) / 10}%">
-        <span>${escapeHtml([group.code, group.label].filter(Boolean).join(" · "))}</span>
-      </div>`;
+      return `<div class="component-box" style="--color:${group.color};left:${x0 / 10}%;top:${y0 / 10}%;width:${(x1 - x0) / 10}%;height:${(y1 - y0) / 10}%"></div>`;
     })
   ).join("");
   return `<figure>

@@ -10,6 +10,9 @@ from electronic_recognition.knowledge import ComponentKnowledgeBase
 from electronic_recognition.config import Settings
 from electronic_recognition.pipeline import (
     RecognitionPipeline,
+    _build_page_views,
+    _build_reference_panels,
+    _remap_component_regions,
     normalize_components,
 )
 
@@ -99,6 +102,105 @@ def test_normalize_components_merges_duplicate_regions() -> None:
         assert len(result[0]["regions"]) == 2
 
 
+def test_reference_panel_contains_rotations_and_manual_variants() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        primary = root / "primary.png"
+        variant = root / "variant.png"
+        Image.new("RGB", (80, 40), "white").save(primary)
+        Image.new("RGB", (40, 80), "white").save(variant)
+        knowledge_path = root / "components.json"
+        knowledge_path.write_text(
+            json.dumps(
+                {
+                    "components": [
+                        {
+                            "id": "switch",
+                            "label": "开关",
+                            "image_path": str(primary),
+                            "variant_images": [str(variant)],
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        knowledge = ComponentKnowledgeBase.load(knowledge_path)
+
+        panels = _build_reference_panels(
+            knowledge,
+            knowledge.components,
+            root / "panels",
+        )
+
+        assert len(panels) == 1
+        assert panels[0].is_file()
+        with Image.open(panels[0]) as panel:
+            assert panel.width == 840
+            assert panel.height == 1362
+
+
+def test_tile_regions_are_remapped_and_deduplicated() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        page = root / "page.png"
+        Image.new("RGB", (100, 100), "white").save(page)
+        views = _build_page_views(
+            page,
+            root / "tiles",
+            page_number=1,
+            grid=2,
+            overlap=0.2,
+        )
+        remapped = _remap_component_regions(
+            [
+                {
+                    "reference_id": "switch",
+                    "label": "开关",
+                    "code": "SA1",
+                    "source_image_index": 1,
+                    "regions": [[270, 270, 340, 340]],
+                },
+                {
+                    "reference_id": "switch",
+                    "label": "开关",
+                    "code": "SA1",
+                    "source_image_index": 2,
+                    "regions": [[500, 500, 600, 600]],
+                },
+            ],
+            views,
+            page_number=1,
+        )
+        sample_path = root / "components.json"
+        sample_path.write_text(
+            json.dumps(
+                {
+                    "components": [
+                        {
+                            "id": "switch",
+                            "label": "开关",
+                            "image_path": str(page),
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        references = ComponentKnowledgeBase.load(
+            sample_path
+        ).components
+
+        result = normalize_components(remapped, references, page_count=1)
+
+        assert len(views) == 5
+        assert len(result) == 1
+        assert result[0]["occurrence_count"] == 1
+        assert len(result[0]["regions"]) == 1
+
+
 def test_pipeline_parses_retrieves_and_recognizes() -> None:
     class FakeModel:
         def __init__(self) -> None:
@@ -117,7 +219,9 @@ def test_pipeline_parses_retrieves_and_recognizes() -> None:
             self.prompts.append(_user_prompt)
             self.calls.append(images)
             if self.model_requests == 1:
-                return {"candidate_ids": ["fuse"]}
+                return {"candidate_ids": ["fuse", "unused"]}
+            if '"id": "unused"' in _user_prompt:
+                return {"detected_components": []}
             return {
                 "detected_components": [
                     {
@@ -170,17 +274,24 @@ def test_pipeline_parses_retrieves_and_recognizes() -> None:
                 api_key="test",
                 model="test",
                 catalog_candidate_limit=5,
-                catalog_pool_limit=1,
-                reference_limit=3,
+                reference_batch_size=1,
             ),
             model=model,
         ).analyze(drawing, root / "work")
 
-        assert model.model_requests == 2
+        assert model.model_requests == 3
         assert len(model.calls[0]) == 1
-        assert len(model.calls[1]) == 2
+        assert len(model.calls[1]) == 6
+        assert len(model.calls[2]) == 6
+        assert "unused component" in model.prompts[0]
+        assert '"id": "fuse"' in model.prompts[1]
+        assert '"id": "unused"' in model.prompts[2]
         assert result.detected_components[0]["code"] == "FU1"
         assert result.title_block == {}
-        assert result.meta["reference_ids"] == ["fuse"]
-        assert result.meta["catalog_pool_components"] == 1
+        assert result.meta["reference_ids"] == ["fuse", "unused"]
+        assert result.meta["reference_batch_size"] == 1
+        assert result.meta["reference_batch_count"] == 2
+        assert result.meta["catalog_components_presented"] == 2
+        assert result.meta["local_catalog_recall_enabled"] is False
+        assert result.meta["page_view_counts"] == [5]
         assert (page_dir / "page-1.png").is_file()

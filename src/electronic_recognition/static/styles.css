@@ -48,6 +48,29 @@ button { cursor: pointer; }
 .primary-button i { display: none; width: 17px; height: 17px; margin-left: 8px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
 .primary-button.loading i { display: inline-block; vertical-align: -4px; }
 .message { min-height: 21px; color: var(--red); font-size: 13px; }
+.knowledge-preview { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; }
+.preview-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.preview-heading p { margin: 0; color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.preview-heading h3 { margin: 3px 0 0; font-size: 17px; }
+.preview-count { padding: 4px 8px; border-radius: 999px; background: #e4edf5; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.preview-search { display: block; margin-top: 16px; }
+.preview-search span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 12px; }
+.preview-search input { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #c9d6e2; border-radius: 6px; background: #fff; }
+.preview-search input:focus { outline: 2px solid rgba(23,105,170,.12); border-color: var(--blue); }
+.knowledge-feature { margin-top: 16px; padding: 12px; border: 1px solid #dbe4ec; border-radius: 7px; background: #fff; }
+.knowledge-image-wrap { min-height: 180px; display: grid; place-items: center; border: 1px solid #edf2f6; border-radius: 6px; background: linear-gradient(180deg,#fbfdff,#f1f5f9); }
+.knowledge-image-wrap img { max-width: 100%; max-height: 220px; object-fit: contain; display: block; }
+.knowledge-meta { margin-top: 12px; }
+.knowledge-meta strong, .knowledge-meta span, .knowledge-meta small { display: block; }
+.knowledge-meta span { margin-top: 4px; color: var(--muted); }
+.knowledge-meta small { margin-top: 6px; color: #8191a2; font-size: 12px; overflow-wrap: anywhere; }
+.knowledge-gallery { max-height: 300px; margin-top: 14px; padding-right: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow-y: auto; }
+.knowledge-thumb { padding: 8px; display: flex; flex-direction: column; gap: 8px; align-items: center; border: 1px solid #d8e2eb; border-radius: 7px; background: #fff; text-align: center; transition: .2s ease; }
+.knowledge-thumb:hover { border-color: #9db8d2; transform: translateY(-1px); }
+.knowledge-thumb.active { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23,105,170,.12); }
+.knowledge-thumb img { width: 100%; height: 76px; object-fit: contain; }
+.knowledge-thumb span { width: 100%; overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.preview-empty { margin: 16px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
 .result-heading { display: flex; justify-content: space-between; align-items: flex-start; }
 .secondary-button { min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .empty-state, .loading-state { min-height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -89,7 +112,6 @@ button { cursor: pointer; }
 .page-canvas img { display: block; width: 100%; height: auto; }
 .annotation-layer { position: absolute; inset: 0; pointer-events: none; }
 .component-box { position: absolute; border: 3px solid var(--color); background: color-mix(in srgb, var(--color) 12%, transparent); }
-.component-box span { position: absolute; left: -3px; bottom: calc(100% + 3px); max-width: 220px; padding: 3px 6px; overflow: hidden; border-radius: 3px; background: var(--color); color: #fff; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .warning-box { margin-top: 16px; padding: 15px; border-left: 4px solid #d97706; background: #fff7e8; }
 .warning-box ul { margin-bottom: 0; }
 pre { max-height: 640px; margin: 0; padding: 18px; overflow: auto; border-radius: 7px; background: #101b2a; color: #d7e4ef; font: 13px/1.6 Consolas, monospace; white-space: pre-wrap; }
@@ -105,4 +127,5 @@ pre { max-height: 640px; margin: 0; padding: 18px; overflow: auto; border-radius
   .app-header h1 { font-size: 18px; }
   .control-panel, .result-panel { padding: 24px 18px; }
   .summary-grid { grid-template-columns: 1fr; }
+  .knowledge-gallery { grid-template-columns: 1fr 1fr; }
 }

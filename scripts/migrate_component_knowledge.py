@@ -10,6 +10,7 @@ FIELDS = (
     "id",
     "label",
     "image_path",
+    "variant_images",
     "component_type",
     "model",
     "definition",
@@ -34,7 +35,21 @@ def main() -> None:
     output = Path(args.output).resolve()
     payload = json.loads(source.read_text(encoding="utf-8"))
     components = [
-        {field: item.get(field, [] if field in {"standards", "aliases", "color_histogram"} else "") for field in FIELDS}
+        {
+            field: item.get(
+                field,
+                []
+                if field
+                in {
+                    "standards",
+                    "aliases",
+                    "variant_images",
+                    "color_histogram",
+                }
+                else "",
+            )
+            for field in FIELDS
+        }
         for item in payload.get("components", [])
         if isinstance(item, dict)
     ]
@@ -42,18 +57,26 @@ def main() -> None:
     asset_dir = output.parent / "assets" / "components"
     asset_dir.mkdir(parents=True, exist_ok=True)
     for item in components:
-        relative = Path(str(item["image_path"]))
-        source_image = (
-            relative if relative.is_absolute() else source.parent / relative
-        )
-        if not source_image.is_file():
-            raise FileNotFoundError(source_image)
-        target = output.parent / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source_image, target)
+        image_values = [
+            str(item["image_path"]),
+            *[str(value) for value in item["variant_images"]],
+        ]
+        for image_value in image_values:
+            relative = Path(image_value)
+            source_image = (
+                relative
+                if relative.is_absolute()
+                else source.parent / relative
+            )
+            if not source_image.is_file():
+                raise FileNotFoundError(source_image)
+            target = output.parent / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if source_image.resolve() != target.resolve():
+                shutil.copy2(source_image, target)
     output.write_text(
         json.dumps(
-            {"version": 1, "components": components},
+            {"version": 2, "components": components},
             ensure_ascii=False,
             indent=2,
         ),

@@ -31,6 +31,15 @@ class ComponentKnowledgeBase:
         path = Path(sample.image_path)
         return path if path.is_absolute() else self.root_dir / path
 
+    def image_paths(self, sample: ComponentSample) -> list[Path]:
+        paths = [sample.image_path, *sample.variant_images]
+        return [
+            path if path.is_absolute() else self.root_dir / path
+            for value in paths
+            if value
+            for path in [Path(value)]
+        ]
+
     def catalog(
         self, components: list[ComponentSample] | None = None
     ) -> list[dict[str, object]]:
@@ -41,6 +50,7 @@ class ComponentKnowledgeBase:
                 "component_type": sample.component_type,
                 "model": sample.model,
                 "aliases": sample.aliases[:4],
+                "variant_count": len(sample.variant_images),
             }
             for sample in (
                 self.components if components is None else components
