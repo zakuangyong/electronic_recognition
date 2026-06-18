@@ -46,6 +46,9 @@ class RecognitionResult:
     document: str
     detected_components: list[dict[str, Any]]
     title_block: dict[str, Any] = field(default_factory=dict)
+    control_signal_configuration: dict[str, Any] = field(
+        default_factory=dict
+    )
     warnings: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
 

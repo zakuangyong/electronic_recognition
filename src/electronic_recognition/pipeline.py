@@ -8,6 +8,9 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageOps
 
 from .config import Settings
+from .control_signal_extractor import (
+    extract_control_signal_configuration,
+)
 from .document import parse_document
 from .knowledge import ComponentKnowledgeBase
 from .llm import VisionModel
@@ -43,11 +46,23 @@ class RecognitionPipeline:
         )
         title_block: dict[str, Any] = {}
         title_block_warning = ""
+        control_signal_configuration: dict[str, Any] = {}
+        control_signal_warning = ""
         if Path(input_path).suffix.lower() == ".pdf":
             try:
                 title_block = extract_title_block(input_path).to_dict()
             except Exception as exc:
                 title_block_warning = f"图签信息提取失败：{exc}"
+            try:
+                control_signal_configuration = (
+                    extract_control_signal_configuration(
+                        input_path
+                    ).to_dict()
+                )
+            except Exception as exc:
+                control_signal_warning = (
+                    f"控制与信号配置提取失败：{exc}"
+                )
         drawing_images = [
             Path(page.image_path) for page in document.pages
         ]
@@ -145,10 +160,15 @@ class RecognitionPipeline:
         warnings = recognition_warnings
         if title_block_warning:
             warnings.append(title_block_warning)
+        if control_signal_warning:
+            warnings.append(control_signal_warning)
         result = RecognitionResult(
             document=document.filename,
             detected_components=components,
             title_block=title_block,
+            control_signal_configuration=(
+                control_signal_configuration
+            ),
             warnings=list(dict.fromkeys(warnings)),
             meta={
                 "elapsed_seconds": round(

@@ -24,7 +24,8 @@ const elements = {
   download: $("downloadButton"), typeTotal: $("typeTotal"),
   instanceTotal: $("instanceTotal"), elapsed: $("elapsedTime"),
   table: $("componentTable"), annotations: $("annotations"),
-  titleBlock: $("titleBlockTable"), json: $("jsonOutput"), warningBox: $("warningBox"),
+  titleBlock: $("titleBlockTable"), controlSignal: $("controlSignalContent"),
+  json: $("jsonOutput"), warningBox: $("warningBox"),
   warningList: $("warningList")
 };
 
@@ -240,7 +241,7 @@ function render(result) {
         <thead><tr><th>序号</th><th>代号</th><th>元件数量</th><th>元件名称</th></tr></thead>
         <tbody>${groups.map((group, index) => `<tr>
           <td>${index + 1}</td>
-          <td><i class="color-key" style="--color:${group.color}"></i><strong>${escapeHtml(group.code || "未标注")}</strong></td>
+          <td class="component-code-cell"><i class="color-key" style="--color:${group.color}"></i><strong class="component-code-text">${formatCodeForWrap(group.code || "未标注")}</strong></td>
           <td><strong>${group.count}</strong></td>
           <td>${escapeHtml(group.label)}</td>
         </tr>`).join("")}</tbody>
@@ -250,6 +251,9 @@ function render(result) {
     (page) => renderPage(page, groups)
   ).join("");
   elements.titleBlock.innerHTML = renderTitleBlock(result.title_block);
+  elements.controlSignal.innerHTML = renderControlSignal(
+    result.control_signal_configuration
+  );
   elements.json.textContent = JSON.stringify(exportableResult(result), null, 2);
   const warnings = result.warnings || [];
   elements.warningBox.classList.toggle("hidden", !warnings.length);
@@ -336,12 +340,67 @@ function renderTitleBlock(titleBlock) {
   </table>`;
 }
 
+function renderControlSignal(configuration) {
+  const signalGroups = Array.isArray(configuration?.signal_inputs)
+    ? configuration.signal_inputs : [];
+  const controlModes = Array.isArray(configuration?.control_modes)
+    ? configuration.control_modes : [];
+  if (!signalGroups.length && !controlModes.length) {
+    return `<p class="empty-copy">未从 PDF 文本层提取到控制与信号配置信息。</p>`;
+  }
+  const signalTable = signalGroups.length
+    ? `<section class="configuration-section">
+        <h4>信号输入</h4>
+        <table class="component-table configuration-table">
+          <thead><tr><th>分类</th><th>信号项</th></tr></thead>
+          <tbody>${signalGroups.map((group) => `<tr>
+            <td>${escapeHtml(group.category || "其他")}</td>
+            <td><div class="configuration-tags">${(group.items || []).map(
+              (item) => `<span>${escapeHtml(item)}</span>`
+            ).join("")}</div></td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </section>`
+    : "";
+  const controllers = [...new Set(controlModes.map(
+    (mode) => String(mode.controller || "").trim()
+  ).filter(Boolean))];
+  const actions = [...new Set(controlModes.map(
+    (mode) => String(mode.action || "").trim()
+  ).filter(Boolean))];
+  const controlTable = controlModes.length
+    ? `<section class="configuration-section">
+        <h4>控制方式</h4>
+        <table class="component-table configuration-table control-matrix">
+          <thead><tr><th>控制动作</th>${controllers.map(
+            (controller) => `<th>${escapeHtml(controller)}</th>`
+          ).join("")}</tr></thead>
+          <tbody>${actions.map((action) => `<tr>
+            <td>${escapeHtml(action)}</td>${controllers.map((controller) =>
+              `<td>${controlModes.some((mode) =>
+                String(mode.controller || "").trim() === controller &&
+                String(mode.action || "").trim() === action
+              ) ? "✓" : "—"}</td>`
+            ).join("")}
+          </tr>`).join("")}</tbody>
+        </table>
+      </section>`
+    : "";
+  const pages = Array.isArray(configuration?.pages)
+    ? configuration.pages.map((page) => page.page).filter(Boolean) : [];
+  const meta = `<p class="title-block-meta">来源：${escapeHtml(
+    configuration?.text_source || "pdf_text"
+  )}${pages.length ? ` · 页码：${escapeHtml([...new Set(pages)].join("、"))}` : ""}</p>`;
+  return `<div class="configuration-card">${meta}${signalTable}${controlTable}</div>`;
+}
+
 function activateTab(name) {
   document.querySelectorAll(".tab").forEach((tab) =>
     tab.classList.toggle("active", tab.dataset.tab === name)
   );
   $("componentsPanel").classList.toggle("hidden", name !== "components");
   $("titleBlockPanel").classList.toggle("hidden", name !== "titleBlock");
+  $("controlSignalPanel").classList.toggle("hidden", name !== "controlSignal");
   $("jsonPanel").classList.toggle("hidden", name !== "json");
 }
 
@@ -370,4 +429,8 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   }[character]));
+}
+
+function formatCodeForWrap(value) {
+  return escapeHtml(value).replace(/([,;])/g, "$1<wbr>");
 }

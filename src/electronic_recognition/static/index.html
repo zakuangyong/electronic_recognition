@@ -111,6 +111,7 @@
           <nav class="tabs">
             <button class="tab active" data-tab="components" type="button">元件识别</button>
             <button class="tab" data-tab="titleBlock" type="button">图签信息</button>
+            <button class="tab" data-tab="controlSignal" type="button">控制与信号配置</button>
             <button class="tab" data-tab="json" type="button">原始 JSON</button>
           </nav>
 
@@ -127,6 +128,13 @@
               <div><h3>图签信息</h3><p>从 PDF 文本层提取，扫描件可接入 OCR 后端补充。</p></div>
             </div>
             <div class="title-block-table" id="titleBlockTable"></div>
+          </div>
+
+          <div id="controlSignalPanel" class="tab-panel hidden">
+            <div class="table-heading">
+              <div><h3>控制与信号配置</h3><p>从 PDF 文本层提取，不计入元器件数量。</p></div>
+            </div>
+            <div id="controlSignalContent"></div>
           </div>
 
           <div id="jsonPanel" class="tab-panel hidden">
