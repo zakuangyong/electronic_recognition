@@ -52,10 +52,16 @@ data/index/assets/components/
 
 ```powershell
 cd D:\project\electronic_recognition
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+conda env create -f environment.yml
+conda activate electronic
 Copy-Item .env.example .env
+```
+
+如果环境已经存在，更新依赖可执行：
+
+```powershell
+conda env update -f environment.yml --prune
+conda activate electronic
 ```
 
 编辑 `.env`：

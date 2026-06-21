@@ -14,6 +14,7 @@ from .combination_rules import detect_combinations
 from .control_signal_extractor import (
     extract_control_signal_configuration,
 )
+from .custom_rules import CustomRuleKnowledgeBase
 from .document import parse_document
 from .knowledge import ComponentKnowledgeBase
 from .llm import VisionModel
@@ -34,10 +35,14 @@ class RecognitionPipeline:
         knowledge_base: ComponentKnowledgeBase,
         settings: Settings | None = None,
         model: VisionModel | None = None,
+        custom_rule_base: CustomRuleKnowledgeBase | None = None,
     ) -> None:
         self.knowledge_base = knowledge_base
         self.settings = settings or Settings.from_env()
         self.model = model or VisionModel(self.settings)
+        self.custom_rule_base = (
+            custom_rule_base or CustomRuleKnowledgeBase.empty()
+        )
 
     def analyze(
         self,
@@ -117,6 +122,7 @@ class RecognitionPipeline:
             component_table=component_table,
             title_block=title_block,
             control_signal_configuration=control_signal_configuration,
+            custom_rules=self.custom_rule_base,
         )
         references = recognition["references"]
         reference_images = recognition["reference_images"]
@@ -143,6 +149,7 @@ class RecognitionPipeline:
             "knowledge_components": len(
                 self.knowledge_base.components
             ),
+            "custom_rules": len(self.custom_rule_base.rules),
             "catalog_components_presented": len(catalog_components),
             "local_catalog_recall_enabled": False,
             "recognition_mode": self.settings.recognition_mode,

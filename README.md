@@ -23,24 +23,39 @@ PDF / PNG
   -> 候选参考图片召回
   -> 图纸页面 + 参考图片多模态识别
   -> 数量和坐标归一化
+  -> 自定义规则层组合判断
   -> API JSON + 前端表格和原图标注
 ```
 
-组件知识库位于：
+知识库分为两个独立层级：
 
 ```text
+# 单元件识别层：参与视觉参考图召回和元件名称修正
 data/index/components.json
 data/index/assets/components/
+
+# 自定义规则层：在单元件识别完成后判断组合关系
+data/index/custom_rules.json
+data/index/assets/rules/
 ```
+
+自定义规则不会作为单元件候选项参与识别，组合结果单独输出到
+`detected_combinations`。
 
 ## 安装
 
 ```powershell
 cd D:\project\electronic_recognition
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+conda env create -f environment.yml
+conda activate electronic
 Copy-Item .env.example .env
+```
+
+如果环境已经存在，更新依赖可执行：
+
+```powershell
+conda env update -f environment.yml --prune
+conda activate electronic
 ```
 
 编辑 `.env`：

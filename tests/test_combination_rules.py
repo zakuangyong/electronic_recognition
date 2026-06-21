@@ -8,6 +8,7 @@ import pytest
 
 from electronic_recognition import api
 from electronic_recognition.combination_rules import detect_combinations
+from electronic_recognition.custom_rules import CustomRuleKnowledgeBase
 
 
 def test_detects_coil_and_contacts_by_exact_code() -> None:
@@ -153,3 +154,235 @@ def test_saved_legacy_result_is_hydrated_with_combinations(
         result = api.saved_result("legacy")
 
         assert result["detected_combinations"][0]["group_code"] == "K1"
+
+
+def test_custom_rules_are_loaded_and_applied_after_component_detection() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        rules_path = root / "custom_rules.json"
+        rules_path.write_text(
+            json.dumps(
+                {
+                    "rules": [
+                        {
+                            "id": "custom-status",
+                            "name": "自定义状态组合",
+                            "scope": "same_page",
+                            "members": [
+                                {
+                                    "role": "辅助触点",
+                                    "min_quantity": 3,
+                                    "code_patterns": ["^QF$"],
+                                },
+                                {
+                                    "role": "红灯",
+                                    "code_patterns": ["^HR$"],
+                                },
+                                {
+                                    "role": "黄灯",
+                                    "code_patterns": ["^HY$"],
+                                },
+                                {
+                                    "role": "绿灯",
+                                    "code_patterns": ["^HG$"],
+                                },
+                            ],
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        rules = CustomRuleKnowledgeBase.load(rules_path)
+
+        combinations = detect_combinations(
+            [
+                {
+                    "label": "断路器辅助触点",
+                    "code": "QF",
+                    "page": 1,
+                    "occurrence_count": 3,
+                },
+                {
+                    "label": "指示灯",
+                    "code": "HR,HY,HG",
+                    "page": 1,
+                    "occurrence_count": 3,
+                },
+            ],
+            custom_rules=rules,
+        )
+
+        result = next(
+            item
+            for item in combinations
+            if item["rule_id"] == "custom-status"
+        )
+        assert result["rule_layer"] == "custom"
+        assert result["pages"] == [1]
+        assert result["group_code"] == "QF,HR,HY,HG"
+        assert [member["quantity"] for member in result["members"]] == [
+            3,
+            1,
+            1,
+            1,
+        ]
+
+
+def test_custom_same_page_rule_does_not_join_components_across_pages() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        rules_path = root / "custom_rules.json"
+        rules_path.write_text(
+            json.dumps(
+                {
+                    "rules": [
+                        {
+                            "id": "same-page",
+                            "name": "同页规则",
+                            "members": [
+                                {
+                                    "role": "A",
+                                    "code_patterns": ["^A$"],
+                                },
+                                {
+                                    "role": "B",
+                                    "code_patterns": ["^B$"],
+                                },
+                            ],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        combinations = detect_combinations(
+            [
+                {"label": "A", "code": "A", "page": 1},
+                {"label": "B", "code": "B", "page": 2},
+            ],
+            custom_rules=CustomRuleKnowledgeBase.load(rules_path),
+        )
+
+        assert not any(
+            item["rule_id"] == "same-page"
+            for item in combinations
+        )
+
+
+def test_component_and_custom_rule_apis_use_separate_catalogs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        image = root / "rule.png"
+        image.write_bytes(b"png")
+        components_path = root / "components.json"
+        components_path.write_text(
+            json.dumps(
+                {
+                    "components": [
+                        {
+                            "id": "lamp",
+                            "label": "指示灯",
+                            "image_path": "lamp.png",
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        rules_path = root / "custom_rules.json"
+        rules_path.write_text(
+            json.dumps(
+                {
+                    "rules": [
+                        {
+                            "id": "custom-rule",
+                            "name": "自定义组合",
+                            "image_path": "rule.png",
+                            "members": [
+                                {
+                                    "role": "指示灯",
+                                    "code_patterns": ["^HL$"],
+                                }
+                            ],
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(api, "KNOWLEDGE_PATH", components_path)
+        monkeypatch.setattr(api, "CUSTOM_RULES_PATH", rules_path)
+
+        components = api.knowledge_items()
+        rules = api.custom_rule_items()
+        config = api.config()
+
+        assert components["count"] == 1
+        assert components["items"][0]["id"] == "lamp"
+        assert rules["count"] == 1
+        assert rules["items"][0]["id"] == "custom-rule"
+        assert config["component_count"] == 1
+        assert config["custom_rule_count"] == 1
+
+
+def test_project_rule_catalog_contains_three_builtin_and_one_custom() -> None:
+    root = Path(__file__).resolve().parents[1]
+    rules = CustomRuleKnowledgeBase.load(
+        root / "data" / "index" / "custom_rules.json"
+    )
+
+    assert len(rules.rules) == 4
+    assert {
+        rule.id
+        for rule in rules.rules
+        if rule.engine == "builtin"
+    } == {
+        "coil_contact_group",
+        "motor_start_protection",
+        "start_stop_indicator",
+    }
+    assert rules.by_id["user-custom-combination-1"].engine == "declarative"
+    assert all(
+        rules.image_path(rule).is_file()
+        for rule in rules.rules
+    )
+
+
+def test_disabled_builtin_rule_is_not_evaluated() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        rules_path = root / "custom_rules.json"
+        rules_path.write_text(
+            json.dumps(
+                {
+                    "rules": [
+                        {
+                            "id": "coil_contact_group",
+                            "name": "线圈触点组合",
+                            "engine": "builtin",
+                            "enabled": False,
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        combinations = detect_combinations(
+            [],
+            open_symbols=[
+                {"raw_label": "继电器线圈", "code": "K1", "page": 1},
+                {"raw_label": "继电器辅助触点", "code": "K1", "page": 1},
+            ],
+            custom_rules=CustomRuleKnowledgeBase.load(rules_path),
+        )
+
+        assert not combinations

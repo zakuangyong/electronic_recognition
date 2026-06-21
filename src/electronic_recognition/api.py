@@ -18,6 +18,7 @@ from PIL import Image
 
 from .config import Settings
 from .combination_rules import detect_combinations
+from .custom_rules import CustomRuleKnowledgeBase
 from .knowledge import ComponentKnowledgeBase
 from .pipeline import RecognitionPipeline
 
@@ -27,6 +28,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parents[1]
 STATIC_DIR = PACKAGE_DIR / "static"
 KNOWLEDGE_PATH = PROJECT_ROOT / "data" / "index" / "components.json"
+CUSTOM_RULES_PATH = PROJECT_ROOT / "data" / "index" / "custom_rules.json"
 RESULT_DIR = PROJECT_ROOT / "result"
 RESULT_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.\-\u4e00-\u9fff]+$")
 STEP_FILES = {
@@ -76,13 +78,20 @@ def health() -> dict[str, str]:
 def config() -> dict[str, object]:
     settings = Settings.from_env()
     count = 0
+    custom_rule_count = 0
     if KNOWLEDGE_PATH.is_file():
         count = len(ComponentKnowledgeBase.load(KNOWLEDGE_PATH).components)
+    if CUSTOM_RULES_PATH.is_file():
+        custom_rule_count = len(
+            CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH).rules
+        )
     return {
         "model": settings.model,
         "api_key_configured": bool(settings.api_key),
         "knowledge_path": str(KNOWLEDGE_PATH),
         "component_count": count,
+        "custom_rules_path": str(CUSTOM_RULES_PATH),
+        "custom_rule_count": custom_rule_count,
         "reference_batch_size": settings.reference_batch_size,
         "recognition_mode": settings.recognition_mode,
         "open_recognition_concurrency": (
@@ -93,6 +102,50 @@ def config() -> dict[str, object]:
             settings.correction_candidate_limit
         ),
     }
+
+
+@app.get("/api/custom-rules")
+def custom_rule_items() -> dict[str, object]:
+    if not CUSTOM_RULES_PATH.is_file():
+        return {"count": 0, "items": []}
+    rule_base = CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH)
+    return {
+        "count": len(rule_base.rules),
+        "items": [
+            {
+                "id": rule.id,
+                "name": rule.name,
+                "description": rule.description,
+                "engine": rule.engine,
+                "enabled": rule.enabled,
+                "scope": rule.scope,
+                "member_count": len(rule.members),
+                "image_url": (
+                    f"/api/custom-rules/{rule.id}/image"
+                    if rule.image_path
+                    else ""
+                ),
+            }
+            for rule in rule_base.rules
+        ],
+    }
+
+
+@app.get("/api/custom-rules/{rule_id}/image")
+def custom_rule_image(rule_id: str) -> FileResponse:
+    if not CUSTOM_RULES_PATH.is_file():
+        raise HTTPException(404, "自定义规则库不存在。")
+    rule_base = CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH)
+    rule = rule_base.by_id.get(rule_id)
+    if not rule:
+        raise HTTPException(404, "自定义规则不存在。")
+    image_path = rule_base.image_path(rule).resolve()
+    root = rule_base.root_dir.resolve()
+    if root not in image_path.parents:
+        raise HTTPException(403, "自定义规则图片路径不合法。")
+    if not image_path.is_file():
+        raise HTTPException(404, "自定义规则图片不存在。")
+    return FileResponse(image_path)
 
 
 @app.get("/api/knowledge")
@@ -229,6 +282,11 @@ def saved_result(result_id: str) -> dict[str, object]:
             title_block=payload.get("title_block", {}),
             control_signal_configuration=payload.get(
                 "control_signal_configuration", {}
+            ),
+            custom_rules=(
+                CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH)
+                if CUSTOM_RULES_PATH.is_file()
+                else None
             ),
         )
     return payload
@@ -381,8 +439,15 @@ def _run_analysis_job(
     try:
         settings = Settings.from_env()
         knowledge = ComponentKnowledgeBase.load(KNOWLEDGE_PATH)
+        custom_rules = (
+            CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH)
+            if CUSTOM_RULES_PATH.is_file()
+            else CustomRuleKnowledgeBase.empty()
+        )
         result, page_dir = RecognitionPipeline(
-            knowledge, settings
+            knowledge,
+            settings,
+            custom_rule_base=custom_rules,
         ).analyze(input_path, work_dir=work_dir, progress=progress)
         progress("job_completed", result.meta)
         _persist_result(

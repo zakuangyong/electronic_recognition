@@ -5,6 +5,10 @@ import json
 from pathlib import Path
 
 from electronic_recognition.combination_rules import detect_combinations
+from electronic_recognition.custom_rules import CustomRuleKnowledgeBase
+
+
+CUSTOM_RULES_PATH = Path("data/index/custom_rules.json")
 
 
 def main() -> None:
@@ -47,6 +51,11 @@ def _analyze(path: Path) -> dict[str, object]:
         title_block=payload.get("title_block", {}),
         control_signal_configuration=payload.get(
             "control_signal_configuration", {}
+        ),
+        custom_rules=(
+            CustomRuleKnowledgeBase.load(CUSTOM_RULES_PATH)
+            if CUSTOM_RULES_PATH.is_file()
+            else None
         ),
     )
     return {

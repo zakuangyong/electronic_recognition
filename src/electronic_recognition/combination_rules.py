@@ -4,6 +4,11 @@ import re
 from collections import defaultdict
 from typing import Any
 
+from .custom_rules import (
+    CustomRuleKnowledgeBase,
+    evaluate_custom_rules,
+)
+
 
 def detect_combinations(
     detected_components: list[dict[str, Any]],
@@ -12,6 +17,7 @@ def detect_combinations(
     component_table: dict[str, Any] | None = None,
     title_block: dict[str, Any] | None = None,
     control_signal_configuration: dict[str, Any] | None = None,
+    custom_rules: CustomRuleKnowledgeBase | None = None,
 ) -> list[dict[str, Any]]:
     """Apply deterministic electrical combination rules."""
     symbols = [
@@ -30,25 +36,57 @@ def detect_combinations(
     )
 
     combinations: list[dict[str, Any]] = []
-    combinations.extend(_coil_contact_combinations(symbols or components))
-
-    motor = _motor_start_combination(
-        components,
-        symbols,
-        table_rows,
-        context,
+    builtin_catalog = (
+        [
+            rule
+            for rule in custom_rules.rules
+            if rule.engine == "builtin"
+        ]
+        if custom_rules is not None
+        else []
     )
-    if motor is not None:
-        combinations.append(motor)
-
-    start_stop = _start_stop_combination(
-        components,
-        symbols,
-        table_rows,
-        context,
+    enabled_builtin_rules = (
+        {rule.id for rule in builtin_catalog if rule.enabled}
+        if builtin_catalog
+        else {
+            "coil_contact_group",
+            "motor_start_protection",
+            "start_stop_indicator",
+        }
     )
-    if start_stop is not None:
-        combinations.append(start_stop)
+    if "coil_contact_group" in enabled_builtin_rules:
+        combinations.extend(
+            _coil_contact_combinations(symbols or components)
+        )
+
+    if "motor_start_protection" in enabled_builtin_rules:
+        motor = _motor_start_combination(
+            components,
+            symbols,
+            table_rows,
+            context,
+        )
+        if motor is not None:
+            combinations.append(motor)
+
+    if "start_stop_indicator" in enabled_builtin_rules:
+        start_stop = _start_stop_combination(
+            components,
+            symbols,
+            table_rows,
+            context,
+        )
+        if start_stop is not None:
+            combinations.append(start_stop)
+
+    if custom_rules is not None:
+        combinations.extend(
+            evaluate_custom_rules(
+                custom_rules,
+                components,
+                open_symbols=symbols,
+            )
+        )
 
     return sorted(
         combinations,
@@ -90,6 +128,7 @@ def _coil_contact_combinations(
         results.append(
             {
                 "rule_id": "coil_contact_group",
+                "rule_layer": "builtin",
                 "name": (
                     "接触器线圈与辅助触点组合"
                     if is_contactor
@@ -191,6 +230,7 @@ def _motor_start_combination(
     )
     return {
         "rule_id": "motor_start_protection",
+        "rule_layer": "builtin",
         "name": "电动机启动与保护组合",
         "group_code": ",".join(
             _unique(breaker + contactor + overload + load)
@@ -257,6 +297,7 @@ def _start_stop_combination(
     )
     return {
         "rule_id": "start_stop_indicator",
+        "rule_layer": "builtin",
         "name": "启停控制及状态指示组合",
         "group_code": ",".join(
             _unique(start + stop + relays + indicators)

@@ -53,6 +53,52 @@ button { cursor: pointer; }
 .preview-heading p { margin: 0; color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
 .preview-heading h3 { margin: 3px 0 0; font-size: 17px; }
 .preview-count { padding: 4px 8px; border-radius: 999px; background: #e4edf5; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.knowledge-kind-switch {
+  margin-top: 16px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border: 1px solid #d7e1ea;
+  border-radius: 8px;
+  background: #eaf0f5;
+}
+.knowledge-kind-switch button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  color: #52677a;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+.knowledge-kind-switch button span {
+  min-width: 23px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #607386;
+  background: rgba(255,255,255,.65);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.knowledge-kind-switch button.active {
+  color: #145c96;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(31,63,91,.1);
+}
+.knowledge-kind-switch button.active span { color: #fff; background: var(--blue); }
+.knowledge-kind-switch button:focus-visible,
+.knowledge-pagination button:focus-visible,
+.knowledge-pagination select:focus-visible {
+  outline: 3px solid rgba(23,105,170,.2);
+  outline-offset: 1px;
+}
 .preview-search { display: block; margin-top: 16px; }
 .preview-search span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 12px; }
 .preview-search input { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #c9d6e2; border-radius: 6px; background: #fff; }
@@ -63,13 +109,59 @@ button { cursor: pointer; }
 .knowledge-meta { margin-top: 12px; }
 .knowledge-meta strong, .knowledge-meta span, .knowledge-meta small { display: block; }
 .knowledge-meta span { margin-top: 4px; color: var(--muted); }
+.knowledge-meta p { margin: 8px 0 0; color: #53677a; font-size: 12px; line-height: 1.55; }
 .knowledge-meta small { margin-top: 6px; color: #8191a2; font-size: 12px; overflow-wrap: anywhere; }
-.knowledge-gallery { max-height: 300px; margin-top: 14px; padding-right: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow-y: auto; }
+.knowledge-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.knowledge-status { flex: 0 0 auto; margin: 0 !important; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.knowledge-status.enabled { color: #087456; background: #e2f5ee; }
+.knowledge-status.disabled { color: #8a3f3a; background: #fbe9e7; }
+.knowledge-no-image { color: #8291a0; font-size: 13px; }
+.knowledge-gallery { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .knowledge-thumb { padding: 8px; display: flex; flex-direction: column; gap: 8px; align-items: center; border: 1px solid #d8e2eb; border-radius: 7px; background: #fff; text-align: center; transition: .2s ease; }
 .knowledge-thumb:hover { border-color: #9db8d2; transform: translateY(-1px); }
 .knowledge-thumb.active { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23,105,170,.12); }
 .knowledge-thumb img { width: 100%; height: 76px; object-fit: contain; }
 .knowledge-thumb span { width: 100%; overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.knowledge-thumb-placeholder { height: 76px; display: grid; place-items: center; color: #8493a1 !important; background: #f1f5f8; border-radius: 5px; }
+.knowledge-pagination {
+  margin-top: 14px;
+  padding-top: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(72px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid #dfe7ee;
+}
+.knowledge-pagination > button {
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #c9d6e2;
+  border-radius: 6px;
+  color: #36556f;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.knowledge-pagination > button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.knowledge-pagination > button:disabled { cursor: not-allowed; opacity: .42; }
+.knowledge-pagination > span { color: #5f7081; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.knowledge-pagination label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.knowledge-pagination select {
+  min-height: 30px;
+  padding: 3px 24px 3px 8px;
+  border: 1px solid #c9d6e2;
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+}
 .preview-empty { margin: 16px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
 .result-heading { display: flex; justify-content: space-between; align-items: flex-start; }
 .secondary-button { min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
@@ -302,6 +394,59 @@ button { cursor: pointer; }
 .label-compare-table { min-width: 980px; }
 .label-compare-table td { overflow-wrap: anywhere; vertical-align: top; }
 .label-compare-table th:first-child, .label-compare-table td:first-child, .label-compare-table th:nth-child(2), .label-compare-table td:nth-child(2), .label-compare-table th:nth-child(5), .label-compare-table td:nth-child(5), .label-compare-table th:nth-child(8), .label-compare-table td:nth-child(8) { text-align: center; }
+.intermediate-process-stack { display: grid; gap: 18px; }
+.intermediate-process-section {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+}
+.intermediate-process-section summary {
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.intermediate-process-section summary::-webkit-details-marker { display: none; }
+.intermediate-process-section summary:hover { background: #f7fafc; }
+.intermediate-process-section summary:focus-visible {
+  outline: 3px solid rgba(23,105,170,.25);
+  outline-offset: 2px;
+}
+.intermediate-process-heading {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.intermediate-process-heading strong {
+  font-size: 18px;
+  line-height: 1.25;
+}
+.intermediate-process-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.intermediate-process-chevron {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: #718397;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .2s ease;
+}
+.intermediate-process-section[open] .intermediate-process-chevron { transform: rotate(180deg); }
+.intermediate-process-content {
+  padding: 0 18px 18px;
+  border-top: 1px solid #e8edf2;
+}
 .compare-badge { display: inline-flex; min-height: 26px; align-items: center; justify-content: center; padding: 3px 9px; border: 1px solid #cbd5df; border-radius: 999px; background: #f8fafc; color: var(--ink); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .compare-badge.match { border-color: rgba(19,138,114,.35); background: rgba(19,138,114,.1); color: #0f6c59; }
 .compare-badge.mismatch { border-color: rgba(217,119,6,.4); background: rgba(217,119,6,.1); color: #9a5700; }
@@ -321,8 +466,6 @@ button { cursor: pointer; }
 .page-canvas img { display: block; width: 100%; height: auto; }
 .annotation-layer { position: absolute; inset: 0; pointer-events: none; }
 .component-box { position: absolute; border: 3px solid var(--color); background: color-mix(in srgb, var(--color) 12%, transparent); }
-.warning-box { margin-top: 16px; padding: 15px; border-left: 4px solid #d97706; background: #fff7e8; }
-.warning-box ul { margin-bottom: 0; }
 pre { max-height: 640px; margin: 0; padding: 18px; overflow: auto; border-radius: 7px; background: #101b2a; color: #d7e4ef; font: 13px/1.6 Consolas, monospace; white-space: pre-wrap; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes scan { 0%,100% { top: 8px; } 50% { top: 110px; } }

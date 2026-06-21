@@ -3,6 +3,7 @@ pyproject.toml
 src/electronic_recognition/__init__.py
 src/electronic_recognition/api.py
 src/electronic_recognition/cli.py
+src/electronic_recognition/combination_rules.py
 src/electronic_recognition/component_table_extractor.py
 src/electronic_recognition/config.py
 src/electronic_recognition/control_signal_extractor.py
@@ -23,6 +24,7 @@ src/electronic_recognition.egg-info/top_level.txt
 src/electronic_recognition/static/app.js
 src/electronic_recognition/static/index.html
 src/electronic_recognition/static/styles.css
+tests/test_combination_rules.py
 tests/test_component_table_extractor.py
 tests/test_control_signal_extractor.py
 tests/test_recognition.py

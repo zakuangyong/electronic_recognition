@@ -2,8 +2,12 @@ const state = {
   file: null,
   result: null,
   knowledgeItems: [],
+  ruleItems: [],
   filteredKnowledge: [],
   selectedKnowledgeId: "",
+  knowledgeKind: "component",
+  knowledgePage: 1,
+  knowledgePageSize: 12,
   analysisToken: 0
 };
 const $ = (id) => document.getElementById(id);
@@ -17,10 +21,16 @@ const elements = {
   card: $("fileCard"), fileName: $("fileName"), fileSize: $("fileSize"),
   fileType: $("fileType"), remove: $("removeFile"), submit: $("submitButton"),
   message: $("formMessage"), status: $("systemStatus"), model: $("modelName"),
-  count: $("componentCount"), referenceLimit: $("referenceLimit"),
+  count: $("componentCount"), customRuleCount: $("customRuleCount"),
+  referenceLimit: $("referenceLimit"),
   knowledgeCount: $("knowledgePreviewCount"), knowledgeSearch: $("knowledgeSearch"),
   knowledgeFeature: $("knowledgeFeature"), knowledgeGallery: $("knowledgeGallery"),
   knowledgeEmpty: $("knowledgeEmpty"),
+  knowledgePagination: $("knowledgePagination"),
+  knowledgePrev: $("knowledgePrev"), knowledgeNext: $("knowledgeNext"),
+  knowledgePageInfo: $("knowledgePageInfo"),
+  knowledgePageSize: $("knowledgePageSize"),
+  componentKindCount: $("componentKindCount"), ruleKindCount: $("ruleKindCount"),
   empty: $("emptyState"), loading: $("loadingState"), content: $("resultContent"),
   download: $("downloadButton"), typeTotal: $("typeTotal"),
   instanceTotal: $("instanceTotal"), elapsed: $("elapsedTime"),
@@ -28,10 +38,7 @@ const elements = {
   combinations: $("combinationContent"),
   titleBlock: $("titleBlockTable"), controlSignal: $("controlSignalContent"),
   componentTableInfo: $("componentTableInfo"),
-  labelComparison: $("labelComparisonContent"),
-  intermediateSteps: $("intermediateStepsContent"),
-  json: $("jsonOutput"), warningBox: $("warningBox"),
-  warningList: $("warningList"),
+  intermediateProcess: $("intermediateProcessContent"),
   recognitionLog: $("recognitionLog"),
   recognitionLogList: $("recognitionLogList"),
   recognitionLogLatest: $("recognitionLogLatest"),
@@ -57,8 +64,21 @@ function bindEvents() {
   elements.remove.addEventListener("click", clearFile);
   elements.form.addEventListener("submit", analyze);
   elements.download.addEventListener("click", downloadJson);
-  elements.knowledgeSearch.addEventListener("input", applyKnowledgeFilter);
+  elements.knowledgeSearch.addEventListener("input", () => {
+    state.knowledgePage = 1;
+    applyKnowledgeFilter();
+  });
   elements.knowledgeGallery.addEventListener("click", handleKnowledgeSelect);
+  document.querySelectorAll("[data-knowledge-kind]").forEach((button) => {
+    button.addEventListener("click", () => setKnowledgeKind(button.dataset.knowledgeKind));
+  });
+  elements.knowledgePrev.addEventListener("click", () => changeKnowledgePage(-1));
+  elements.knowledgeNext.addEventListener("click", () => changeKnowledgePage(1));
+  elements.knowledgePageSize.addEventListener("change", () => {
+    state.knowledgePageSize = Number(elements.knowledgePageSize.value) || 12;
+    state.knowledgePage = 1;
+    renderKnowledgePreview();
+  });
   document.querySelectorAll(".tab").forEach((tab) => {
     const panel = $(`${tab.dataset.tab}Panel`);
     tab.setAttribute("role", "tab");
@@ -80,6 +100,7 @@ async function loadConfig() {
     elements.status.querySelector("b").textContent = "服务在线";
     elements.model.textContent = config.model || "未配置";
     elements.count.textContent = `${config.component_count} 张`;
+    elements.customRuleCount.textContent = `${config.custom_rule_count || 0} 条`;
     elements.referenceLimit.textContent = `${config.reference_batch_size} 张/批`;
     if (!config.api_key_configured) {
       elements.message.textContent = "请先在 .env 中配置模型密钥和模型名称。";
@@ -93,18 +114,47 @@ async function loadConfig() {
 
 async function loadKnowledge() {
   try {
-    const response = await fetch("/api/knowledge");
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.detail || "知识库读取失败");
-    state.knowledgeItems = (payload.items || []).map((item) => ({
+    const [componentResponse, ruleResponse] = await Promise.all([
+      fetch("/api/knowledge"),
+      fetch("/api/custom-rules")
+    ]);
+    const [componentPayload, rulePayload] = await Promise.all([
+      componentResponse.json(),
+      ruleResponse.json()
+    ]);
+    if (!componentResponse.ok) {
+      throw new Error(componentPayload.detail || "单元件知识库读取失败");
+    }
+    if (!ruleResponse.ok) {
+      throw new Error(rulePayload.detail || "组合规则库读取失败");
+    }
+    state.knowledgeItems = (componentPayload.items || []).map((item) => ({
       id: String(item.id || ""),
       label: String(item.label || "未命名"),
       componentType: String(item.component_type || ""),
-      imageUrl: String(item.image_url || "")
+      imageUrl: String(item.image_url || ""),
+      kind: "component",
+      detail: "单元件参考样本"
     }));
+    state.ruleItems = (rulePayload.items || []).map((item) => ({
+      id: String(item.id || ""),
+      label: String(item.name || "未命名组合"),
+      componentType: `${
+        item.engine === "builtin" ? "内置组合规则" : "自定义组合"
+      } · ${Number(item.member_count) || 0} 个成员`,
+      imageUrl: String(item.image_url || ""),
+      kind: "rule",
+      detail: String(item.description || ""),
+      enabled: Boolean(item.enabled),
+      engine: String(item.engine || "declarative"),
+      scope: String(item.scope || "")
+    }));
+    elements.componentKindCount.textContent = state.knowledgeItems.length;
+    elements.ruleKindCount.textContent = state.ruleItems.length;
     applyKnowledgeFilter();
   } catch (error) {
     state.knowledgeItems = [];
+    state.ruleItems = [];
     state.filteredKnowledge = [];
     elements.knowledgeCount.textContent = "不可用";
     elements.knowledgeFeature.classList.add("hidden");
@@ -146,13 +196,35 @@ function clearResult() {
   elements.download.classList.add("hidden");
 }
 
+function activeKnowledgeItems() {
+  return state.knowledgeKind === "rule" ? state.ruleItems : state.knowledgeItems;
+}
+
+function setKnowledgeKind(kind) {
+  if (!["component", "rule"].includes(kind) || kind === state.knowledgeKind) return;
+  state.knowledgeKind = kind;
+  state.knowledgePage = 1;
+  state.selectedKnowledgeId = "";
+  elements.knowledgeSearch.value = "";
+  document.querySelectorAll("[data-knowledge-kind]").forEach((button) => {
+    const active = button.dataset.knowledgeKind === kind;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  elements.knowledgeSearch.placeholder = kind === "rule"
+    ? "输入组合名称、说明或 ID"
+    : "输入名称、类型或 ID";
+  applyKnowledgeFilter();
+}
+
 function applyKnowledgeFilter() {
   const keyword = elements.knowledgeSearch.value.trim().toLowerCase();
-  const filtered = state.knowledgeItems.filter((item) => {
+  const filtered = activeKnowledgeItems().filter((item) => {
     const searchable = [
       item.id,
       item.label,
-      item.componentType
+      item.componentType,
+      item.detail
     ].join(" ").toLowerCase();
     return !keyword || searchable.includes(keyword);
   });
@@ -164,13 +236,27 @@ function applyKnowledgeFilter() {
 }
 
 function renderKnowledgePreview() {
-  const total = state.knowledgeItems.length;
+  const total = activeKnowledgeItems().length;
   const filtered = state.filteredKnowledge;
-  const visibleItems = filtered.slice(0, 24);
-  const selected = filtered.find((item) => item.id === state.selectedKnowledgeId) || null;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / state.knowledgePageSize));
+  state.knowledgePage = Math.min(Math.max(1, state.knowledgePage), pageCount);
+  const start = (state.knowledgePage - 1) * state.knowledgePageSize;
+  const visibleItems = filtered.slice(start, start + state.knowledgePageSize);
+  let selected = visibleItems.find(
+    (item) => item.id === state.selectedKnowledgeId
+  ) || null;
+  if (!selected && visibleItems.length) {
+    selected = visibleItems[0];
+    state.selectedKnowledgeId = selected.id;
+  }
+  const kindLabel = state.knowledgeKind === "rule" ? "组合元件" : "单元件";
   elements.knowledgeCount.textContent = total
-    ? `${visibleItems.length}/${filtered.length}${filtered.length !== total ? `，共 ${total}` : ""}`
+    ? `${filtered.length ? start + 1 : 0}-${Math.min(start + visibleItems.length, filtered.length)} / ${filtered.length}`
     : "0 项";
+  elements.knowledgePageInfo.textContent = `第 ${state.knowledgePage} / ${pageCount} 页`;
+  elements.knowledgePrev.disabled = state.knowledgePage <= 1;
+  elements.knowledgeNext.disabled = state.knowledgePage >= pageCount;
+  elements.knowledgePagination.classList.toggle("hidden", filtered.length === 0);
   elements.knowledgeEmpty.classList.toggle("hidden", filtered.length > 0);
   elements.knowledgeFeature.classList.toggle("hidden", !selected);
   elements.knowledgeGallery.classList.toggle("hidden", !visibleItems.length);
@@ -178,17 +264,23 @@ function renderKnowledgePreview() {
     elements.knowledgeFeature.innerHTML = "";
     elements.knowledgeGallery.innerHTML = "";
     elements.knowledgeEmpty.textContent = total
-      ? "没有匹配的知识库样本。"
-      : "当前没有可预览的知识库样本。";
+      ? `没有匹配的${kindLabel}。`
+      : `当前没有可预览的${kindLabel}。`;
     return;
   }
   if (selected) {
+    const status = selected.kind === "rule"
+      ? `<span class="knowledge-status ${selected.enabled ? "enabled" : "disabled"}">${selected.enabled ? "已启用" : "已停用"}</span>`
+      : "";
     elements.knowledgeFeature.innerHTML = `<div class="knowledge-image-wrap">
-        <img src="${escapeHtml(selected.imageUrl)}" alt="${escapeHtml(selected.label)} 参考图" />
+        ${selected.imageUrl
+          ? `<img src="${escapeHtml(selected.imageUrl)}" alt="${escapeHtml(selected.label)} 参考图" />`
+          : `<span class="knowledge-no-image">暂无参考图</span>`}
       </div>
       <div class="knowledge-meta">
-        <strong>${escapeHtml(selected.label)}</strong>
+        <div class="knowledge-title-row"><strong>${escapeHtml(selected.label)}</strong>${status}</div>
         <span>${escapeHtml(selected.componentType || "未分类")}</span>
+        ${selected.detail ? `<p>${escapeHtml(selected.detail)}</p>` : ""}
         <small>ID: ${escapeHtml(selected.id)}</small>
       </div>`;
   }
@@ -198,7 +290,9 @@ function renderKnowledgePreview() {
       data-knowledge-id="${escapeHtml(item.id)}"
       aria-pressed="${item.id === state.selectedKnowledgeId ? "true" : "false"}"
     >
-      <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.label)} 缩略图" />
+      ${item.imageUrl
+        ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.label)} 缩略图" />`
+        : `<span class="knowledge-thumb-placeholder">无图</span>`}
       <span>${escapeHtml(item.label)}</span>
     </button>`).join("");
 }
@@ -208,6 +302,22 @@ function handleKnowledgeSelect(event) {
   if (!button) return;
   state.selectedKnowledgeId = button.dataset.knowledgeId || "";
   renderKnowledgePreview();
+}
+
+function changeKnowledgePage(offset) {
+  const pageCount = Math.max(
+    1,
+    Math.ceil(state.filteredKnowledge.length / state.knowledgePageSize)
+  );
+  const nextPage = Math.min(pageCount, Math.max(1, state.knowledgePage + offset));
+  if (nextPage === state.knowledgePage) return;
+  state.knowledgePage = nextPage;
+  const firstItem = state.filteredKnowledge[
+    (state.knowledgePage - 1) * state.knowledgePageSize
+  ];
+  state.selectedKnowledgeId = firstItem?.id || "";
+  renderKnowledgePreview();
+  elements.knowledgeFeature.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 async function analyze(event) {
@@ -402,16 +512,7 @@ function render(result) {
   elements.componentTableInfo.innerHTML = renderComponentTableInfo(
     result.component_table
   );
-  elements.labelComparison.innerHTML = renderLabelComparison(result, groups);
-  elements.intermediateSteps.innerHTML = renderIntermediateSteps(
-    result.recognition_steps
-  );
-  elements.json.textContent = JSON.stringify(exportableResult(result), null, 2);
-  const warnings = result.warnings || [];
-  elements.warningBox.classList.toggle("hidden", !warnings.length);
-  elements.warningList.innerHTML = warnings.map(
-    (warning) => `<li>${escapeHtml(warning)}</li>`
-  ).join("");
+  elements.intermediateProcess.innerHTML = renderIntermediateProcess(result, groups);
 }
 
 function groupComponents(components) {
@@ -755,6 +856,45 @@ function renderStepJsonBlock(title, payload) {
   </section>`;
 }
 
+function renderIntermediateProcess(result, groups) {
+  const steps = {
+    ...(result.intermediate_steps || {}),
+    warnings: result.warnings || result.intermediate_steps?.warnings || []
+  };
+  return `<div class="intermediate-process-stack">
+    ${renderIntermediateDisclosure(
+      "标签比对",
+      "对照图签信息、图纸标签与元件识别结果。",
+      renderLabelComparison(result, groups)
+    )}
+    ${renderIntermediateDisclosure(
+      "中间结果 JSON",
+      "展示开放识别与 RAG 修正的中间数据。",
+      renderIntermediateSteps(steps)
+    )}
+    ${renderIntermediateDisclosure(
+      "原始 JSON",
+      "展示当前识别结果的导出内容。",
+      `<pre>${escapeHtml(JSON.stringify(exportableResult(result), null, 2))}</pre>`
+    )}
+  </div>`;
+}
+
+function renderIntermediateDisclosure(title, description, content) {
+  return `<details class="intermediate-process-section">
+    <summary>
+      <span class="intermediate-process-heading">
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(description)}</span>
+      </span>
+      <svg class="intermediate-process-chevron" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m8 10 4 4 4-4" />
+      </svg>
+    </summary>
+    <div class="intermediate-process-content">${content}</div>
+  </details>`;
+}
+
 function stepTitle(name) {
   const titles = {
     recognition_log: "00 识别日志",
@@ -787,9 +927,7 @@ function activateTab(name) {
   $("titleBlockPanel").classList.toggle("hidden", name !== "titleBlock");
   $("controlSignalPanel").classList.toggle("hidden", name !== "controlSignal");
   $("componentTableInfoPanel").classList.toggle("hidden", name !== "componentTableInfo");
-  $("labelComparisonPanel").classList.toggle("hidden", name !== "labelComparison");
-  $("intermediateStepsPanel").classList.toggle("hidden", name !== "intermediateSteps");
-  $("jsonPanel").classList.toggle("hidden", name !== "json");
+  $("intermediateProcessPanel").classList.toggle("hidden", name !== "intermediateProcess");
 }
 
 function downloadJson() {
