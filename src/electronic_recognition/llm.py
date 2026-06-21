@@ -7,6 +7,7 @@ import mimetypes
 import random
 import socket
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -23,6 +24,7 @@ class VisionModel:
         self.settings = settings
         self.model_requests = 0
         self.cache_hits = 0
+        self._counter_lock = threading.Lock()
 
     def complete_json(
         self,
@@ -64,7 +66,8 @@ class VisionModel:
             / f"{key}.json"
         )
         if cache_path.is_file():
-            self.cache_hits += 1
+            with self._counter_lock:
+                self.cache_hits += 1
             return json.loads(cache_path.read_text(encoding="utf-8"))
         request = urllib.request.Request(
             self.settings.base_url.rstrip("/") + "/chat/completions",
@@ -76,7 +79,8 @@ class VisionModel:
             },
             method="POST",
         )
-        self.model_requests += 1
+        with self._counter_lock:
+            self.model_requests += 1
         response = self._send(request)
         parsed = _parse_response(response)
         cache_path.parent.mkdir(parents=True, exist_ok=True)

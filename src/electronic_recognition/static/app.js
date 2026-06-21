@@ -3,7 +3,8 @@ const state = {
   result: null,
   knowledgeItems: [],
   filteredKnowledge: [],
-  selectedKnowledgeId: ""
+  selectedKnowledgeId: "",
+  analysisToken: 0
 };
 const $ = (id) => document.getElementById(id);
 const colors = [
@@ -24,9 +25,17 @@ const elements = {
   download: $("downloadButton"), typeTotal: $("typeTotal"),
   instanceTotal: $("instanceTotal"), elapsed: $("elapsedTime"),
   table: $("componentTable"), annotations: $("annotations"),
+  combinations: $("combinationContent"),
   titleBlock: $("titleBlockTable"), controlSignal: $("controlSignalContent"),
+  componentTableInfo: $("componentTableInfo"),
+  labelComparison: $("labelComparisonContent"),
+  intermediateSteps: $("intermediateStepsContent"),
   json: $("jsonOutput"), warningBox: $("warningBox"),
-  warningList: $("warningList")
+  warningList: $("warningList"),
+  recognitionLog: $("recognitionLog"),
+  recognitionLogList: $("recognitionLogList"),
+  recognitionLogLatest: $("recognitionLogLatest"),
+  recognitionLogCount: $("recognitionLogCount")
 };
 
 document.addEventListener("DOMContentLoaded", init);
@@ -50,9 +59,16 @@ function bindEvents() {
   elements.download.addEventListener("click", downloadJson);
   elements.knowledgeSearch.addEventListener("input", applyKnowledgeFilter);
   elements.knowledgeGallery.addEventListener("click", handleKnowledgeSelect);
-  document.querySelectorAll(".tab").forEach((tab) =>
-    tab.addEventListener("click", () => activateTab(tab.dataset.tab))
-  );
+  document.querySelectorAll(".tab").forEach((tab) => {
+    const panel = $(`${tab.dataset.tab}Panel`);
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", tab.classList.contains("active"));
+    if (panel) {
+      tab.setAttribute("aria-controls", panel.id);
+      panel.setAttribute("role", "tabpanel");
+    }
+    tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+  });
 }
 
 async function loadConfig() {
@@ -116,6 +132,7 @@ function setFile(file) {
 }
 
 function clearFile() {
+  state.analysisToken += 1;
   state.file = null; elements.input.value = "";
   elements.card.classList.add("hidden"); elements.drop.classList.remove("hidden");
   elements.submit.disabled = true; clearResult();
@@ -196,20 +213,101 @@ function handleKnowledgeSelect(event) {
 async function analyze(event) {
   event.preventDefault();
   if (!state.file) return;
+  const token = ++state.analysisToken;
   setLoading(true);
   const data = new FormData();
   data.append("drawing", state.file);
   try {
     const response = await fetch("/analyze", { method: "POST", body: data });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.detail || "识别失败");
-    state.result = payload; render(payload);
+    if (!response.ok) {
+      const message = errorMessage(payload, "识别失败");
+      if (payload?.detail?.result_id) {
+        const failed = await loadSavedResult(payload.detail);
+        state.result = failed; render(failed);
+        elements.message.textContent = message;
+        return;
+      }
+      throw new Error(message);
+    }
+    const result = await waitForAnalysis(payload, token);
+    if (token !== state.analysisToken) return;
+    state.result = result; render(result);
+    if (result.status === "failed") {
+      elements.message.textContent =
+        result.warnings?.[0] || "识别任务失败，请展开日志查看详情。";
+    }
   } catch (error) {
+    if (token !== state.analysisToken) return;
     elements.message.textContent = error.message;
     elements.empty.classList.remove("hidden");
   } finally {
-    setLoading(false);
+    if (token === state.analysisToken) setLoading(false);
   }
+}
+
+async function waitForAnalysis(payload, token) {
+  if (!payload?.result_id) return payload;
+  const stepsUrl = payload.steps_url ||
+    `/api/results/${encodeURIComponent(payload.result_id)}/steps`;
+  while (token === state.analysisToken) {
+    try {
+      const response = await fetch(stepsUrl, { cache: "no-store" });
+      const progress = await response.json();
+      if (response.ok) {
+        renderRecognitionLogs(progress.steps?.recognition_log || []);
+        if (progress.status === "complete" || progress.status === "failed") {
+          return loadSavedResult(payload);
+        }
+      }
+    } catch {
+      // A transient polling error should not cancel the server-side task.
+    }
+    await delay(900);
+  }
+  throw new Error("识别任务已取消。");
+}
+
+async function loadSavedResult(payload) {
+  if (!payload?.result_id) {
+    return payload;
+  }
+  const url = payload.result_url || `/api/results/${encodeURIComponent(payload.result_id)}`;
+  const response = await fetch(url);
+  const saved = await response.json();
+  if (!response.ok) throw new Error(errorMessage(saved, "识别结果读取失败"));
+  return hydrateSavedSteps(saved);
+}
+
+async function hydrateSavedSteps(result) {
+  if (!result?.result_id) {
+    return result;
+  }
+  try {
+    const response = await fetch(`/api/results/${encodeURIComponent(result.result_id)}/steps`);
+    const payload = await response.json();
+    if (response.ok) {
+      result.persisted_steps = payload;
+      result.recognition_steps = {
+        ...(result.recognition_steps || {}),
+        ...(payload.steps || {})
+      };
+    }
+  } catch {
+    // Steps are a diagnostic convenience; the main result can still render.
+  }
+  return result;
+}
+
+function errorMessage(payload, fallback) {
+  const detail = payload?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail?.message) {
+    return detail.result_id
+      ? `${detail.message}（结果ID：${detail.result_id}）`
+      : detail.message;
+  }
+  return fallback;
 }
 
 function setLoading(active) {
@@ -217,6 +315,14 @@ function setLoading(active) {
   elements.submit.classList.toggle("loading", active);
   elements.submit.querySelector("span").textContent = active ? "识别中" : "开始识别";
   if (active) {
+    elements.recognitionLog.open = false;
+    renderRecognitionLogs([
+      {
+        time: new Date().toISOString(),
+        level: "info",
+        message: "正在上传图纸并创建识别任务。"
+      }
+    ]);
     elements.empty.classList.add("hidden");
     elements.content.classList.add("hidden");
     elements.loading.classList.remove("hidden");
@@ -224,6 +330,42 @@ function setLoading(active) {
   } else {
     elements.loading.classList.add("hidden");
   }
+}
+
+function renderRecognitionLogs(logs) {
+  const entries = Array.isArray(logs) ? logs : [];
+  elements.recognitionLogCount.textContent = String(entries.length);
+  elements.recognitionLogLatest.textContent = entries.length
+    ? String(entries[entries.length - 1].message || "正在识别")
+    : "等待任务启动";
+  elements.recognitionLogList.innerHTML = entries.map((entry) => {
+    const level = ["warning", "error"].includes(entry.level)
+      ? entry.level : "info";
+    const time = formatLogTime(entry.time);
+    return `<li class="${level}">
+      <time datetime="${escapeHtml(entry.time || "")}">${escapeHtml(time)}</time>
+      <span>${escapeHtml(entry.message || "")}</span>
+    </li>`;
+  }).join("");
+  if (elements.recognitionLog.open) {
+    elements.recognitionLogList.scrollTop =
+      elements.recognitionLogList.scrollHeight;
+  }
+}
+
+function formatLogTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return new Intl.DateTimeFormat("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(date);
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function render(result) {
@@ -250,9 +392,19 @@ function render(result) {
   elements.annotations.innerHTML = (result.preview_pages || []).map(
     (page) => renderPage(page, groups)
   ).join("");
+  elements.combinations.innerHTML = renderCombinations(
+    result.detected_combinations || []
+  );
   elements.titleBlock.innerHTML = renderTitleBlock(result.title_block);
   elements.controlSignal.innerHTML = renderControlSignal(
     result.control_signal_configuration
+  );
+  elements.componentTableInfo.innerHTML = renderComponentTableInfo(
+    result.component_table
+  );
+  elements.labelComparison.innerHTML = renderLabelComparison(result, groups);
+  elements.intermediateSteps.innerHTML = renderIntermediateSteps(
+    result.recognition_steps
   );
   elements.json.textContent = JSON.stringify(exportableResult(result), null, 2);
   const warnings = result.warnings || [];
@@ -310,6 +462,45 @@ function renderPage(page, groups) {
       <div class="annotation-layer">${boxes}</div>
     </div>
   </figure>`;
+}
+
+function renderCombinations(combinations) {
+  if (!Array.isArray(combinations) || !combinations.length) {
+    return `<p class="empty-copy">当前图纸未匹配到已配置的组合元件规则。</p>`;
+  }
+  return `<div class="combination-grid">${combinations.map((item) => {
+    const confidence = Math.round((Number(item.confidence) || 0) * 100);
+    const pages = Array.isArray(item.pages) && item.pages.length
+      ? `第 ${item.pages.join("、")} 页`
+      : "跨页或未定位";
+    const members = Array.isArray(item.members) ? item.members : [];
+    const evidence = Array.isArray(item.evidence) ? item.evidence : [];
+    return `<article class="combination-card">
+      <header>
+        <div>
+          <span class="combination-rule">${escapeHtml(item.rule_id || "rule")}</span>
+          <h4>${escapeHtml(item.name || "组合元件")}</h4>
+        </div>
+        <span class="combination-confidence" aria-label="置信度 ${confidence}%">${confidence}%</span>
+      </header>
+      <div class="combination-meta">
+        <span>组合代号 <strong>${formatCodeForWrap(item.group_code || "--")}</strong></span>
+        <span>物理组合数 <strong>${escapeHtml(item.physical_quantity || 1)}</strong></span>
+        <span>位置 <strong>${escapeHtml(pages)}</strong></span>
+      </div>
+      <div class="combination-members">
+        ${members.map((member) => `<div class="combination-member">
+          <span>${escapeHtml(member.role || "成员")}</span>
+          <strong>${formatCodeForWrap((member.codes || []).join(",") || "--")}</strong>
+          <small>${escapeHtml((member.labels || []).join("；") || "由规则推断")}</small>
+          <b>× ${escapeHtml(member.quantity || 1)}</b>
+        </div>`).join("")}
+      </div>
+      ${evidence.length ? `<ul class="combination-evidence">${evidence.map(
+        (text) => `<li>${escapeHtml(text)}</li>`
+      ).join("")}</ul>` : ""}
+    </article>`;
+  }).join("")}</div>`;
 }
 
 function renderTitleBlock(titleBlock) {
@@ -394,13 +585,210 @@ function renderControlSignal(configuration) {
   return `<div class="configuration-card">${meta}${signalTable}${controlTable}</div>`;
 }
 
-function activateTab(name) {
-  document.querySelectorAll(".tab").forEach((tab) =>
-    tab.classList.toggle("active", tab.dataset.tab === name)
+function renderComponentTableInfo(componentTable) {
+  const rows = Array.isArray(componentTable?.rows) ? componentTable.rows : [];
+  if (!rows.length) {
+    return `<p class="empty-copy">未从 PDF 文本层提取到图纸表格信息。</p>`;
+  }
+  const columns = ["序号", "代号", "元件名称", "规格型号", "数量", "备注"];
+  const pages = Array.isArray(componentTable?.pages)
+    ? componentTable.pages.map((page) => page.page).filter(Boolean) : [];
+  const meta = `<p class="title-block-meta">来源：${escapeHtml(
+    componentTable?.text_source || "pdf_text"
+  )}${pages.length ? ` · 页码：${escapeHtml([...new Set(pages)].join("、"))}` : ""} · ${rows.length} 行</p>`;
+  return `<div class="component-table-info-card">${meta}
+    <div class="component-table-info-wrap">
+      <table class="component-table drawing-table">
+        <colgroup>
+          <col class="sequence"><col class="code"><col class="name">
+          <col class="model"><col class="quantity"><col class="note">
+        </colgroup>
+        <thead><tr>${columns.map((column) =>
+          `<th>${escapeHtml(column)}</th>`
+        ).join("")}</tr></thead>
+        <tbody>${rows.map((row) => `<tr>${columns.map((column) =>
+          `<td>${escapeHtml(String(row?.[column] || "").trim() || "--")}</td>`
+        ).join("")}</tr>`).join("")}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderLabelComparison(result, groups) {
+  const titleFields = result.title_block?.fields || {};
+  const tableRows = Array.isArray(result.component_table?.rows)
+    ? result.component_table.rows : [];
+  const recognitionRows = groups.map((group) => ({
+    code: normalizeCompareText(group.code),
+    rawCode: group.code,
+    label: group.label,
+    count: group.count
+  }));
+  const comparisons = tableRows.map((row) => {
+    const tagCode = normalizeCompareText(row?.["代号"]);
+    const tagName = String(row?.["元件名称"] || "").trim();
+    const tagQuantity = parseCount(row?.["数量"]);
+    const matched = recognitionRows.find((item) =>
+      item.code && tagCode && (item.code === tagCode || item.code.includes(tagCode) || tagCode.includes(item.code))
+    );
+    const recognizedCount = matched ? Number(matched.count) || 0 : 0;
+    let status = "missing";
+    let statusText = "未识别";
+    if (!tagCode) {
+      status = "empty";
+      statusText = "标签缺失";
+    } else if (matched && tagQuantity !== null && recognizedCount !== tagQuantity) {
+      status = "mismatch";
+      statusText = "数量不一致";
+    } else if (matched) {
+      status = "match";
+      statusText = "一致";
+    }
+    return {
+      sequence: String(row?.["序号"] || "").trim(),
+      code: String(row?.["代号"] || "").trim(),
+      tagName,
+      model: String(row?.["规格型号"] || "").trim(),
+      tagQuantity,
+      recognizedName: matched?.label || "",
+      recognizedCode: matched?.rawCode || "",
+      recognizedCount,
+      status,
+      statusText
+    };
+  });
+  const matchedCount = comparisons.filter((item) => item.status === "match").length;
+  const mismatchCount = comparisons.filter((item) => item.status === "mismatch").length;
+  const missingCount = comparisons.filter((item) => item.status === "missing").length;
+  const titleRows = [
+    ["工程名称", titleFields["工程名称"]],
+    ["图纸名称", titleFields["图纸名称"]],
+    ["原理图号", titleFields["原理图号"]],
+    ["合同号", titleFields["合同号"]]
+  ].filter(([, value]) => String(value || "").trim());
+
+  if (!tableRows.length && !titleRows.length) {
+    return `<p class="empty-copy">暂无可比对的图签信息或图纸标签。</p>`;
+  }
+
+  const titleSummary = titleRows.length
+    ? `<section class="label-compare-section">
+        <h4>图签摘要</h4>
+        <div class="label-compare-title-grid">${titleRows.map(([label, value]) =>
+          `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+        ).join("")}</div>
+      </section>`
+    : "";
+
+  const comparisonTable = comparisons.length
+    ? `<section class="label-compare-section">
+        <h4>图纸标签与识别结果</h4>
+        <div class="component-table-info-wrap">
+          <table class="component-table label-compare-table">
+            <thead><tr>
+              <th>状态</th><th>序号</th><th>图纸标签代号</th><th>图纸标签名称</th>
+              <th>标签数量</th><th>识别代号</th><th>识别名称</th><th>识别数量</th>
+            </tr></thead>
+            <tbody>${comparisons.map((item) => `<tr>
+              <td><span class="compare-badge ${item.status}">${escapeHtml(item.statusText)}</span></td>
+              <td>${escapeHtml(item.sequence || "--")}</td>
+              <td>${escapeHtml(item.code || "--")}</td>
+              <td>${escapeHtml(item.tagName || "--")}</td>
+              <td>${escapeHtml(item.tagQuantity ?? "--")}</td>
+              <td>${escapeHtml(item.recognizedCode || "--")}</td>
+              <td>${escapeHtml(item.recognizedName || "--")}</td>
+              <td>${escapeHtml(item.recognizedCount || "--")}</td>
+            </tr>`).join("")}</tbody>
+          </table>
+        </div>
+      </section>`
+    : `<p class="empty-copy">未提取到图纸标签表格，无法进行标签逐项比对。</p>`;
+
+  return `<div class="label-compare-card">
+    <div class="label-compare-summary">
+      <article><span>图签字段</span><strong>${titleRows.length}</strong></article>
+      <article><span>图纸标签</span><strong>${tableRows.length}</strong></article>
+      <article><span>一致</span><strong>${matchedCount}</strong></article>
+      <article><span>待核对</span><strong>${mismatchCount + missingCount}</strong></article>
+    </div>
+    ${titleSummary}
+    ${comparisonTable}
+  </div>`;
+}
+
+function normalizeCompareText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[，,;；、]/g, ",")
+    .replace(/^[-_]+|[-_]+$/g, "");
+}
+
+function parseCount(value) {
+  const match = String(value || "").match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
+function renderIntermediateSteps(steps) {
+  const entries = Object.entries(steps || {}).filter(([, payload]) =>
+    payload !== undefined
   );
+  if (!entries.length) {
+    return `<p class="empty-copy">暂无中间结果。</p>`;
+  }
+  return `<div class="intermediate-grid">
+    ${entries.map(([name, payload]) =>
+      renderStepJsonBlock(stepTitle(name), payload)
+    ).join("")}
+  </div>`;
+}
+
+function renderStepJsonBlock(title, payload) {
+  const count = Array.isArray(payload)
+    ? `${payload.length} 项`
+    : payload && typeof payload === "object"
+      ? `${Object.keys(payload).length} 键`
+      : "1 项";
+  return `<section class="intermediate-block">
+    <header><h4>${escapeHtml(title)}</h4><span>${escapeHtml(count)}</span></header>
+    <pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+  </section>`;
+}
+
+function stepTitle(name) {
+  const titles = {
+    recognition_log: "00 识别日志",
+    document: "00 文档解析",
+    title_block: "01 图签信息",
+    control_signal_configuration: "02 控制与信号配置",
+    component_table: "03 图纸标签",
+    open_symbols: "04 开放识别",
+    open_recognition_tiles: "04A 切片识别状态",
+    open_categories: "04B 开放类别汇总",
+    rag_corrections: "05 RAG 修正",
+    detected_components: "06 元件结果",
+    detected_combinations: "06B 组合元件结果",
+    preview_pages: "07 页面预览",
+    warnings: "08 警告",
+    meta: "09 元信息",
+    legacy_detected_components: "旧版元件结果"
+  };
+  return titles[name] || name;
+}
+
+function activateTab(name) {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    const active = tab.dataset.tab === name;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
   $("componentsPanel").classList.toggle("hidden", name !== "components");
+  $("combinationsPanel").classList.toggle("hidden", name !== "combinations");
   $("titleBlockPanel").classList.toggle("hidden", name !== "titleBlock");
   $("controlSignalPanel").classList.toggle("hidden", name !== "controlSignal");
+  $("componentTableInfoPanel").classList.toggle("hidden", name !== "componentTableInfo");
+  $("labelComparisonPanel").classList.toggle("hidden", name !== "labelComparison");
+  $("intermediateStepsPanel").classList.toggle("hidden", name !== "intermediateSteps");
   $("jsonPanel").classList.toggle("hidden", name !== "json");
 }
 

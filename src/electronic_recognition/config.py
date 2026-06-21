@@ -19,6 +19,10 @@ class Settings:
     reference_batch_size: int = 12
     tile_grid: int = 2
     tile_overlap: float = 0.15
+    open_recognition_concurrency: int = 2
+    correction_batch_size: int = 12
+    correction_candidate_limit: int = 8
+    recognition_mode: str = "hybrid"
 
     @classmethod
     def from_env(
@@ -60,6 +64,34 @@ class Settings:
                 0.0,
                 min(0.45, float(os.getenv("ER_TILE_OVERLAP", "0.15"))),
             ),
+            open_recognition_concurrency=max(
+                1,
+                min(
+                    4,
+                    int(
+                        os.getenv(
+                            "ER_OPEN_RECOGNITION_CONCURRENCY",
+                            "2",
+                        )
+                    ),
+                ),
+            ),
+            correction_batch_size=max(
+                1,
+                int(os.getenv("ER_CORRECTION_BATCH_SIZE", "12")),
+            ),
+            correction_candidate_limit=max(
+                1,
+                int(
+                    os.getenv(
+                        "ER_CORRECTION_CANDIDATE_LIMIT",
+                        "8",
+                    )
+                ),
+            ),
+            recognition_mode=_recognition_mode(
+                os.getenv("ER_RECOGNITION_MODE", "hybrid")
+            ),
         )
 
 
@@ -99,3 +131,12 @@ def _resolve_dotenv(path: str | Path | None) -> Path | None:
         if candidate.is_file():
             return candidate
     return None
+
+
+def _recognition_mode(value: str) -> str:
+    normalized = value.strip().lower().replace("-", "_")
+    return normalized if normalized in {
+        "hybrid",
+        "rag_first",
+        "vision_first",
+    } else "hybrid"

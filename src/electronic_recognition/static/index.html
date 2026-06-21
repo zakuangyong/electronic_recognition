@@ -99,6 +99,24 @@
           <div class="scanner"><span></span></div>
           <h3>正在识别元器件</h3>
           <p>解析图纸、召回知识库参考图并调用视觉模型。</p>
+          <details class="recognition-log" id="recognitionLog">
+            <summary aria-controls="recognitionLogContent">
+              <span class="recognition-log-title">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 5h16M4 12h16M4 19h10" />
+                </svg>
+                <strong>识别日志</strong>
+                <span class="recognition-log-count" id="recognitionLogCount">0</span>
+              </span>
+              <span class="recognition-log-latest" id="recognitionLogLatest">等待任务启动</span>
+              <svg class="recognition-log-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m8 10 4 4 4-4" />
+              </svg>
+            </summary>
+            <div class="recognition-log-content" id="recognitionLogContent">
+              <ol id="recognitionLogList" aria-live="polite"></ol>
+            </div>
+          </details>
         </div>
 
         <div class="result-content hidden" id="resultContent">
@@ -108,10 +126,14 @@
             <article><span>耗时</span><strong id="elapsedTime">--</strong></article>
           </div>
 
-          <nav class="tabs">
+          <nav class="tabs" role="tablist" aria-label="识别结果分类">
             <button class="tab active" data-tab="components" type="button">元件识别</button>
+            <button class="tab" data-tab="combinations" type="button">组合识别</button>
             <button class="tab" data-tab="titleBlock" type="button">图签信息</button>
             <button class="tab" data-tab="controlSignal" type="button">控制与信号配置</button>
+            <button class="tab" data-tab="componentTableInfo" type="button">图纸标签</button>
+            <button class="tab" data-tab="labelComparison" type="button">标签比对</button>
+            <button class="tab" data-tab="intermediateSteps" type="button">中间结果</button>
             <button class="tab" data-tab="json" type="button">原始 JSON</button>
           </nav>
 
@@ -121,6 +143,16 @@
             </div>
             <div class="component-table-wrap" id="componentTable"></div>
             <div class="annotations" id="annotations"></div>
+          </div>
+
+          <div id="combinationsPanel" class="tab-panel hidden">
+            <div class="table-heading">
+              <div>
+                <h3>组合元件识别</h3>
+                <p>依据代号、元件角色、图纸标签和控制语义进行确定性规则判断。</p>
+              </div>
+            </div>
+            <div id="combinationContent"></div>
           </div>
 
           <div id="titleBlockPanel" class="tab-panel hidden">
@@ -135,6 +167,27 @@
               <div><h3>控制与信号配置</h3><p>从 PDF 文本层提取，不计入元器件数量。</p></div>
             </div>
             <div id="controlSignalContent"></div>
+          </div>
+
+          <div id="componentTableInfoPanel" class="tab-panel hidden">
+            <div class="table-heading">
+              <div><h3>图纸标签</h3><p>从 PDF 文本层提取表格信息，不计入元器件数量。</p></div>
+            </div>
+            <div id="componentTableInfo"></div>
+          </div>
+
+          <div id="labelComparisonPanel" class="tab-panel hidden">
+            <div class="table-heading">
+              <div><h3>标签比对</h3><p>对照图签信息、图纸标签与元件识别结果。</p></div>
+            </div>
+            <div id="labelComparisonContent"></div>
+          </div>
+
+          <div id="intermediateStepsPanel" class="tab-panel hidden">
+            <div class="table-heading">
+              <div><h3>中间结果 JSON</h3><p>展示开放识别与 RAG 修正的中间数据。</p></div>
+            </div>
+            <div id="intermediateStepsContent"></div>
           </div>
 
           <div id="jsonPanel" class="tab-panel hidden">

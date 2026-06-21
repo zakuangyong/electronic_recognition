@@ -45,10 +45,15 @@ class ParsedDocument:
 class RecognitionResult:
     document: str
     detected_components: list[dict[str, Any]]
+    detected_combinations: list[dict[str, Any]] = field(
+        default_factory=list
+    )
     title_block: dict[str, Any] = field(default_factory=dict)
     control_signal_configuration: dict[str, Any] = field(
         default_factory=dict
     )
+    component_table: dict[str, Any] = field(default_factory=dict)
+    recognition_steps: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
 
