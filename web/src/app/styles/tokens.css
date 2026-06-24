@@ -1,0 +1,19 @@
+:root {
+  color-scheme: light;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  --color-bg: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef3f9;
+  --color-border: #d7dfeb;
+  --color-text: #1f2937;
+  --color-text-muted: #5f6b7a;
+  --color-primary: #2563eb;
+  --shadow-panel: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --radius-panel: 18px;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

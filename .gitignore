@@ -7,3 +7,5 @@ data/output/
 data/search/drawings.db*
 data/search/qdrant/
 result/
+web/node_modules/
+web/dist/
