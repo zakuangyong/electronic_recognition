@@ -17,6 +17,8 @@ from .control_signal_extractor import (
 from .custom_rules import CustomRuleKnowledgeBase
 from .document import parse_document
 from .knowledge import ComponentKnowledgeBase
+from .layout_models import PageLayout
+from .layout_router import LayoutRouter, summarize_layouts
 from .llm import VisionModel
 from .models import ComponentSample, RecognitionResult
 from .prompts import (
@@ -27,6 +29,7 @@ from .prompts import (
     recognition_prompt,
 )
 from .title_block_extractor import extract_title_block
+from .region_images import crop_region_image
 
 
 class RecognitionPipeline:
@@ -43,6 +46,7 @@ class RecognitionPipeline:
         self.custom_rule_base = (
             custom_rule_base or CustomRuleKnowledgeBase.empty()
         )
+        self.layout_router = LayoutRouter(self.settings)
 
     def analyze(
         self,
@@ -108,13 +112,51 @@ class RecognitionPipeline:
             except Exception as exc:
                 component_table_warning = f"图纸表格提取失败：{exc}"
             _emit(progress, "component_table", component_table)
-        catalog_components = self.knowledge_base.components
+        try:
+            page_layouts = self.layout_router.route(
+                document,
+                input_path,
+                title_block=title_block,
+                component_table=component_table,
+            )
+            layout_warning = ""
+        except Exception as exc:
+            page_layouts = []
+            layout_warning = f"Layout routing failed; using grid fallback: {exc}"
+        page_quality_steps = [layout.quality for layout in page_layouts]
+        layout_region_steps = [
+            layout.to_dict() for layout in page_layouts
+        ]
+        structured_region_steps = [
+            region.to_dict()
+            for layout in page_layouts
+            for region in layout.regions
+            if region.route == "structured"
+        ]
+        _emit(progress, "page_quality", page_quality_steps)
+        _emit(progress, "layout_regions", layout_region_steps)
+        _emit(
+            progress,
+            "structured_region_extraction",
+            structured_region_steps,
+        )
+        catalog_components = [
+            sample
+            for sample in self.knowledge_base.components
+            if sample.enabled
+        ]
         recognition = self._recognize_components(
             document,
             directory,
             catalog_components,
             progress,
+            page_layouts,
         )
+        recognition["steps"]["page_quality"] = page_quality_steps
+        recognition["steps"]["layout_regions"] = layout_region_steps
+        recognition["steps"][
+            "structured_region_extraction"
+        ] = structured_region_steps
         components = recognition["components"]
         combinations = detect_combinations(
             components,
@@ -137,7 +179,10 @@ class RecognitionPipeline:
             warnings.append(control_signal_warning)
         if component_table_warning:
             warnings.append(component_table_warning)
+        if layout_warning:
+            warnings.append(layout_warning)
         warnings = list(dict.fromkeys(warnings))
+        layout_summary = summarize_layouts(page_layouts)
         meta = {
             "elapsed_seconds": round(
                 time.perf_counter() - started, 2
@@ -154,6 +199,19 @@ class RecognitionPipeline:
             "local_catalog_recall_enabled": False,
             "recognition_mode": self.settings.recognition_mode,
             "recognition_strategy": recognition["strategy"],
+            "layout_routing_enabled": (
+                self.settings.layout_routing_enabled
+            ),
+            "layout_router_mode": self.settings.layout_router_mode,
+            "layout_fallback_to_grid": (
+                self.settings.layout_fallback_to_grid
+            ),
+            **layout_summary,
+            "avoided_component_model_requests": max(
+                0,
+                recognition.get("legacy_page_view_count", 0)
+                - recognition.get("routed_component_view_count", 0),
+            ),
             "open_symbol_count": recognition["open_symbol_count"],
             "open_category_count": recognition.get(
                 "open_category_count", 0
@@ -219,6 +277,7 @@ class RecognitionPipeline:
                 control_signal_configuration
             ),
             component_table=component_table,
+            page_layouts=layout_region_steps,
             recognition_steps=recognition["steps"],
             warnings=warnings,
             meta=meta,
@@ -231,6 +290,7 @@ class RecognitionPipeline:
         directory: Path,
         catalog_components: list[ComponentSample],
         progress: Callable[[str, object], None] | None = None,
+        page_layouts: list[PageLayout] | None = None,
     ) -> dict[str, Any]:
         mode = self.settings.recognition_mode
         if mode in {"hybrid", "vision_first"}:
@@ -238,6 +298,7 @@ class RecognitionPipeline:
                 document,
                 directory,
                 progress,
+                page_layouts,
             )
             if recognition["components"] or mode == "vision_first":
                 recognition["strategy"] = "vision_first"
@@ -247,6 +308,7 @@ class RecognitionPipeline:
             directory,
             catalog_components,
             progress,
+            page_layouts,
         )
         recognition["strategy"] = (
             "rag_first_fallback" if mode == "hybrid" else "rag_first"
@@ -259,6 +321,7 @@ class RecognitionPipeline:
         directory: Path,
         catalog_components: list[ComponentSample],
         progress: Callable[[str, object], None] | None = None,
+        page_layouts: list[PageLayout] | None = None,
     ) -> dict[str, Any]:
         _emit(progress, "open_symbols", [])
         _emit(progress, "rag_corrections", [])
@@ -283,7 +346,9 @@ class RecognitionPipeline:
                 "候选选择模型未从知识库目录中返回有效候选元件。"
             )
         references = [
-            self.knowledge_base.by_id[item] for item in candidate_ids
+            self.knowledge_base.by_id[item]
+            for item in candidate_ids
+            if self.knowledge_base.by_id[item].enabled
         ]
         if not references:
             raise RuntimeError("组件知识库中没有可用参考图片。")
@@ -295,18 +360,33 @@ class RecognitionPipeline:
         raw_components: list[object] = []
         warnings: list[str] = []
         page_view_counts: list[int] = []
+        legacy_page_view_count = 0
+        routed_component_view_count = 0
         reference_batches = list(
             _batches(references, self.settings.reference_batch_size)
         )
+        layouts_by_page = _layouts_by_page(page_layouts)
         for page in document.pages:
-            page_views = _build_page_views(
+            legacy_views = _build_page_views(
                 Path(page.image_path),
                 directory / "page-tiles",
                 page.number,
                 self.settings.tile_grid,
                 self.settings.tile_overlap,
             )
+            legacy_page_view_count += len(legacy_views)
+            page_views = _build_routed_page_views(
+                Path(page.image_path),
+                directory / "page-tiles",
+                page.number,
+                self.settings,
+                layouts_by_page.get(page.number),
+                legacy_views,
+            )
             page_view_counts.append(len(page_views))
+            routed_component_view_count += len(
+                [view for view in page_views if _is_component_view(view)]
+            )
             view_metadata = _view_metadata(page_views)
             page_images = [
                 Path(str(view["path"])) for view in page_views
@@ -360,6 +440,8 @@ class RecognitionPipeline:
             "open_instance_count": 0,
             "rag_correction_count": 0,
             "rag_corrected_instance_count": 0,
+            "legacy_page_view_count": legacy_page_view_count,
+            "routed_component_view_count": routed_component_view_count,
             "strategy": "rag_first",
         }
 
@@ -368,6 +450,7 @@ class RecognitionPipeline:
         document: Any,
         directory: Path,
         progress: Callable[[str, object], None] | None = None,
+        page_layouts: list[PageLayout] | None = None,
     ) -> dict[str, Any]:
         raw_symbols: list[dict[str, Any]] = []
         warnings: list[str] = []
@@ -375,22 +458,35 @@ class RecognitionPipeline:
         tile_statuses: list[dict[str, Any]] = []
         successful_views = 0
         failed_views = 0
+        legacy_page_view_count = 0
+        routed_component_view_count = 0
+        layouts_by_page = _layouts_by_page(page_layouts)
         _emit(progress, "open_symbols", raw_symbols)
         _emit(progress, "open_recognition_tiles", tile_statuses)
         for page in document.pages:
-            page_views = _build_page_views(
+            legacy_views = _build_page_views(
                 Path(page.image_path),
                 directory / "page-tiles",
                 page.number,
                 self.settings.tile_grid,
                 self.settings.tile_overlap,
             )
+            legacy_page_view_count += len(legacy_views)
+            page_views = _build_routed_page_views(
+                Path(page.image_path),
+                directory / "page-tiles",
+                page.number,
+                self.settings,
+                layouts_by_page.get(page.number),
+                legacy_views,
+            )
             page_view_counts.append(len(page_views))
             recognition_views = [
                 view
                 for view in page_views
-                if view["kind"] == "tile"
+                if _is_component_view(view)
             ] or page_views
+            routed_component_view_count += len(recognition_views)
             workers = min(
                 len(recognition_views),
                 self.settings.open_recognition_concurrency,
@@ -593,6 +689,8 @@ class RecognitionPipeline:
             "rag_corrected_instance_count": corrected_instances,
             "open_view_success_count": successful_views,
             "open_view_failure_count": failed_views,
+            "legacy_page_view_count": legacy_page_view_count,
+            "routed_component_view_count": routed_component_view_count,
             "strategy": "vision_first",
         }
 
@@ -735,6 +833,8 @@ def normalize_components(
                 "occurrence_count": count,
                 "confidence": _confidence(raw.get("confidence")),
                 "regions": [],
+                "region_id": str(raw.get("region_id", "")).strip(),
+                "region_type": str(raw.get("region_type", "")).strip(),
                 "evidence": str(raw.get("evidence", "")).strip(),
             },
         )
@@ -745,6 +845,10 @@ def normalize_components(
             float(item["confidence"]), _confidence(raw.get("confidence"))
         )
         item["code"] = _merge_codes(str(item["code"]), code)
+        if not str(item.get("region_id", "")).strip():
+            item["region_id"] = str(raw.get("region_id", "")).strip()
+        if not str(item.get("region_type", "")).strip():
+            item["region_type"] = str(raw.get("region_type", "")).strip()
         existing = {tuple(region) for region in item["regions"]}
         for region in regions:
             if tuple(region) not in existing:
@@ -797,6 +901,8 @@ def _view_metadata(
             "kind": view["kind"],
             "tile": view["tile"],
             "bounds_in_page": view["bounds"],
+            "region_id": view.get("region_id", ""),
+            "region_type": view.get("region_type", ""),
         }
         for index, view in enumerate(page_views)
     ]
@@ -1203,6 +1309,158 @@ def _as_rgb(source: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
+def _layouts_by_page(
+    layouts: list[PageLayout] | None,
+) -> dict[int, PageLayout]:
+    return {layout.page: layout for layout in layouts or []}
+
+
+def _is_component_view(view: dict[str, object]) -> bool:
+    if view.get("route") == "component":
+        return True
+    return view.get("kind") == "tile"
+
+
+def _build_routed_page_views(
+    page_path: Path,
+    output_dir: Path,
+    page_number: int,
+    settings: Settings,
+    layout: PageLayout | None,
+    fallback_views: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    if (
+        not settings.layout_routing_enabled
+        or settings.layout_router_mode == "disabled"
+        or layout is None
+        or layout.fallback_required
+    ):
+        return fallback_views
+    component_regions = [
+        region
+        for region in layout.regions
+        if region.route == "component"
+        and region.confidence >= settings.layout_min_confidence
+    ]
+    if not component_regions:
+        return fallback_views if settings.layout_fallback_to_grid else []
+    region_dir = output_dir / "layout-regions"
+    views: list[dict[str, object]] = [
+        {
+            "path": page_path,
+            "kind": "full_page",
+            "tile": "full",
+            "bounds": [0.0, 0.0, 1000.0, 1000.0],
+            "route": "context",
+        }
+    ]
+    for index, region in enumerate(component_regions, start=1):
+        if _region_area(region.bounds) / 1_000_000.0 > settings.region_max_area_ratio:
+            nested = _build_region_tiles(
+                page_path,
+                region_dir,
+                region,
+                page_number,
+                index,
+                settings.tile_grid,
+                settings.region_tile_overlap,
+            )
+            views.extend(nested)
+            continue
+        crop_path = crop_region_image(page_path, region_dir, region)
+        views.append(
+            {
+                "path": crop_path,
+                "kind": "layout_region",
+                "tile": region.id,
+                "bounds": region.bounds,
+                "route": region.route,
+                "region_id": region.id,
+                "region_type": region.region_type,
+                "confidence": region.confidence,
+            }
+        )
+    return views
+
+
+def _build_region_tiles(
+    page_path: Path,
+    output_dir: Path,
+    region: Any,
+    page_number: int,
+    region_index: int,
+    grid: int,
+    overlap: float,
+) -> list[dict[str, object]]:
+    crop_path = crop_region_image(page_path, output_dir, region)
+    local_views = _build_page_views(
+        crop_path,
+        output_dir / f"{region.id}-tiles",
+        page_number,
+        max(1, grid),
+        overlap,
+    )
+    tiled = [view for view in local_views if view["kind"] == "tile"]
+    results: list[dict[str, object]] = []
+    for index, view in enumerate(tiled, start=1):
+        local_bounds = view["bounds"]
+        assert isinstance(local_bounds, list)
+        bounds = [
+            round(
+                float(region.bounds[0])
+                + float(local_bounds[0])
+                / 1000
+                * (float(region.bounds[2]) - float(region.bounds[0])),
+                4,
+            ),
+            round(
+                float(region.bounds[1])
+                + float(local_bounds[1])
+                / 1000
+                * (float(region.bounds[3]) - float(region.bounds[1])),
+                4,
+            ),
+            round(
+                float(region.bounds[0])
+                + float(local_bounds[2])
+                / 1000
+                * (float(region.bounds[2]) - float(region.bounds[0])),
+                4,
+            ),
+            round(
+                float(region.bounds[1])
+                + float(local_bounds[3])
+                / 1000
+                * (float(region.bounds[3]) - float(region.bounds[1])),
+                4,
+            ),
+        ]
+        results.append(
+            {
+                "path": view["path"],
+                "kind": "layout_region_tile",
+                "tile": f"{region.id}-{region_index}-{index}",
+                "bounds": bounds,
+                "route": "component",
+                "region_id": region.id,
+                "region_type": region.region_type,
+                "confidence": region.confidence,
+            }
+        )
+    return results or [
+        {
+            "path": crop_path,
+            "kind": "layout_region",
+            "tile": region.id,
+            "bounds": region.bounds,
+            "route": "component",
+            "region_id": region.id,
+            "region_type": region.region_type,
+            "confidence": region.confidence,
+        }
+    ]
+
+
 def _build_page_views(
     page_path: Path,
     output_dir: Path,
@@ -1325,6 +1583,14 @@ def _remap_component_regions(
             for region in local_regions
         ]
         item["page"] = page_number
+        if "region_id" in page_views[source_index - 1]:
+            item["region_id"] = page_views[source_index - 1].get(
+                "region_id", ""
+            )
+        if "region_type" in page_views[source_index - 1]:
+            item["region_type"] = page_views[source_index - 1].get(
+                "region_type", ""
+            )
         remapped.append(item)
     return remapped
 

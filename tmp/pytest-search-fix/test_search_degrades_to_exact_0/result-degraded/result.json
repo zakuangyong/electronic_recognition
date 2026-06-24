@@ -1,0 +1,1 @@
+{"document": "fan-control.pdf", "title_block": {"fields": {"drawing_title": "Fan control drawing"}}, "detected_components": [{"code": "K1", "label": "Contactor coil", "component_type": "relay", "page": 1}], "detected_combinations": [], "preview_pages": [{"page": 1}], "meta": {"page_count": 1}}

@@ -1,0 +1,1 @@
+{"document": "fan-control.pdf", "title_block": {"fields": {"drawing_title": "组合式风阀控制图"}}, "detected_components": [{"code": "K1", "label": "交流继电器线圈", "component_type": "继电器", "page": 1}], "detected_combinations": [{"name": "继电器线圈与辅助触点组合", "rule_id": "coil_contact_group", "rule_layer": "builtin", "pages": [1]}], "preview_pages": [{"page": 1}], "meta": {"page_count": 1}}

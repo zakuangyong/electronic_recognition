@@ -19,9 +19,17 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+layout = []
+ocr = []
+search = [
+  "qdrant-client>=1.9",
+  "sentence-transformers>=3.0",
+]
 
 [project.scripts]
 electronic-recognition = "electronic_recognition.cli:main"
+er = "electronic_recognition.cli:main"
+er-rebuild-search-index = "electronic_recognition.search.rebuild:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

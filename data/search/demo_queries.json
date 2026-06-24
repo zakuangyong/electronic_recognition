@@ -1,0 +1,118 @@
+{
+  "exact": [
+    {
+      "query": "A17387",
+      "type": "exact",
+      "expected_result_ids": [],
+      "notes": "用于展示项目号或合同号的精确检索。"
+    },
+    {
+      "query": "CDDT-6-DZ-.07",
+      "type": "exact",
+      "expected_result_ids": [],
+      "notes": "用于展示图号精确命中。"
+    },
+    {
+      "query": "LCAE1-G-1",
+      "type": "exact",
+      "expected_result_ids": [],
+      "notes": "用于展示回路或设备编号检索。"
+    },
+    {
+      "query": "K1",
+      "type": "exact",
+      "expected_result_ids": [],
+      "notes": "用于展示元件代号精确命中。"
+    },
+    {
+      "query": "SA1",
+      "type": "exact",
+      "expected_result_ids": [],
+      "notes": "用于展示选择开关代号精确命中。"
+    }
+  ],
+  "keyword": [
+    {
+      "query": "排烟风机",
+      "type": "keyword",
+      "expected_result_ids": [],
+      "notes": "用于展示 BM25 对设备功能词的召回。"
+    },
+    {
+      "query": "组合式风阀",
+      "type": "keyword",
+      "expected_result_ids": [],
+      "notes": "用于展示标题与元件描述的关键词匹配。"
+    },
+    {
+      "query": "交流继电器线圈",
+      "type": "keyword",
+      "expected_result_ids": [],
+      "notes": "用于展示元件标签和类型的关键词检索。"
+    },
+    {
+      "query": "PLC输入输出端子",
+      "type": "keyword",
+      "expected_result_ids": [],
+      "notes": "用于展示控制信号与端子类信息检索。"
+    },
+    {
+      "query": "线圈辅助触点",
+      "type": "keyword",
+      "expected_result_ids": [],
+      "notes": "用于展示组合规则和组合名称召回。"
+    }
+  ],
+  "semantic": [
+    {
+      "query": "带多个继电器联动的控制图",
+      "type": "semantic",
+      "expected_result_ids": [],
+      "notes": "BM25 措辞未必完全一致，适合观察 Dense 的语义召回。"
+    },
+    {
+      "query": "可以手动自动切换的风阀控制回路",
+      "type": "semantic",
+      "expected_result_ids": [],
+      "notes": "用于演示手动/自动控制模式的语义检索。"
+    },
+    {
+      "query": "包含PLC输入和输出信号的图纸",
+      "type": "semantic",
+      "expected_result_ids": [],
+      "notes": "用于演示控制信号相关的语义召回。"
+    },
+    {
+      "query": "用于排烟风机控制的原理图",
+      "type": "semantic",
+      "expected_result_ids": [],
+      "notes": "用于演示功能描述和图纸用途之间的语义匹配。"
+    },
+    {
+      "query": "线圈和辅助触点属于同一设备的图纸",
+      "type": "semantic",
+      "expected_result_ids": [],
+      "notes": "用于演示组合规则块带来的结构化语义能力。"
+    }
+  ],
+  "constraint": [
+    {
+      "query": "A17387项目中的风阀控制图",
+      "type": "constraint",
+      "expected_result_ids": [],
+      "notes": "用于演示项目过滤语义与标题匹配的组合查询。"
+    },
+    {
+      "query": "第1页包含选择开关和继电器线圈的图纸",
+      "type": "constraint",
+      "expected_result_ids": [],
+      "notes": "用于演示页面块和元件组块的联合命中。"
+    },
+    {
+      "query": "同时包含K1 K2 K3的控制原理图",
+      "type": "constraint",
+      "expected_result_ids": [],
+      "notes": "用于演示多元件约束型查询。"
+    }
+  ]
+}

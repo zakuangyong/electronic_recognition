@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>图纸检索</title>
+    <link rel="stylesheet" href="/static/styles.css?v=20260623-2" />
+    <link rel="stylesheet" href="/static/search.css?v=20260623-2" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p>Drawing Search</p>
+        <h1>图纸混合检索</h1>
+      </div>
+      <div class="header-actions">
+        <a class="knowledge-entry" href="/">识别工作台</a>
+        <a class="knowledge-entry" href="/knowledge">知识库管理</a>
+        <div class="status" id="searchStatus">
+          <span></span><b>连接中</b>
+        </div>
+      </div>
+    </header>
+
+    <main class="search-workspace">
+      <section class="search-panel" aria-labelledby="searchTitle">
+        <div class="section-heading">
+          <p>01 / SEARCH</p>
+          <h2 id="searchTitle">检索条件</h2>
+        </div>
+        <form id="searchForm" class="search-form">
+          <label>
+            <span>关键词、图号、合同号或元件代号</span>
+            <input
+              id="queryInput"
+              type="search"
+              autocomplete="off"
+              placeholder="例如 A17387_1706、KM1、带热继保护的风机启动图"
+            />
+          </label>
+          <div class="search-mode-group" role="radiogroup" aria-label="检索模式">
+            <label class="mode-chip">
+              <input type="radio" name="retrievalMode" value="bm25" />
+              <span>BM25</span>
+            </label>
+            <label class="mode-chip">
+              <input type="radio" name="retrievalMode" value="vector" />
+              <span>Vector</span>
+            </label>
+            <label class="mode-chip">
+              <input type="radio" name="retrievalMode" value="hybrid" checked />
+              <span>Hybrid</span>
+            </label>
+          </div>
+          <div class="search-filters">
+            <label>
+              <span>版本</span>
+              <input id="revisionInput" type="text" autocomplete="off" />
+            </label>
+            <label>
+              <span>工程/系统</span>
+              <input id="projectInput" type="text" autocomplete="off" />
+            </label>
+          </div>
+          <label class="search-debug">
+            <input id="debugInput" type="checkbox" />
+            <span>显示调试信息与三路命中排名</span>
+          </label>
+          <div class="search-actions">
+            <button class="primary-button" id="searchButton" type="submit">
+              <span>开始检索</span><i></i>
+            </button>
+            <div class="rebuild-actions">
+              <select id="rebuildMode">
+                <option value="all">全部重建</option>
+                <option value="bm25">仅 BM25</option>
+                <option value="vector">仅 Vector</option>
+              </select>
+              <button class="secondary-button" id="rebuildButton" type="button">
+                重建索引
+              </button>
+            </div>
+          </div>
+          <p class="message" id="searchMessage" role="status" aria-live="polite"></p>
+        </form>
+
+        <section class="search-index-card" aria-labelledby="indexTitle">
+          <div class="preview-heading">
+            <div>
+              <p>INDEX</p>
+              <h3 id="indexTitle">索引状态</h3>
+            </div>
+            <span class="preview-count" id="indexMode">--</span>
+          </div>
+          <dl class="search-stats">
+            <div><dt>图纸</dt><dd id="indexedDrawings">--</dd></div>
+            <div><dt>Chunks</dt><dd id="indexedChunks">--</dd></div>
+            <div><dt>向量点数</dt><dd id="vectorPoints">--</dd></div>
+            <div><dt>失败任务</dt><dd id="failedJobs">--</dd></div>
+          </dl>
+          <div class="health-grid">
+            <article class="health-card" id="sqliteCard">
+              <span>SQLite</span>
+              <strong id="sqliteState">--</strong>
+              <p id="sqliteDetail">索引库状态</p>
+            </article>
+            <article class="health-card" id="embeddingCard">
+              <span>Embedding</span>
+              <strong id="embeddingState">--</strong>
+              <p id="embeddingDetail">模型加载状态</p>
+            </article>
+            <article class="health-card" id="qdrantCard">
+              <span>Qdrant</span>
+              <strong id="qdrantState">--</strong>
+              <p id="qdrantDetail">向量库状态</p>
+            </article>
+            <article class="health-card" id="degradedCard">
+              <span>降级状态</span>
+              <strong id="degradedState">--</strong>
+              <p id="degradedDetail">当前服务模式</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="search-index-card" aria-labelledby="demoTitle">
+          <div class="preview-heading">
+            <div>
+              <p>DEMO</p>
+              <h3 id="demoTitle">演示查询集</h3>
+            </div>
+            <span class="preview-count" id="demoCount">0 组</span>
+          </div>
+          <div class="demo-query-groups" id="demoQueries"></div>
+          <p class="demo-tip">
+            点击任一查询可自动填入检索框，并保留当前模式进行对照演示。
+          </p>
+        </section>
+      </section>
+
+      <section class="search-results-panel" aria-labelledby="resultsTitle">
+        <div class="result-heading">
+          <div class="section-heading">
+            <p>02 / RESULTS</p>
+            <h2 id="resultsTitle">检索结果</h2>
+          </div>
+          <span class="search-total" id="resultTotal">0 条</span>
+        </div>
+        <div class="search-empty" id="searchEmpty">
+          <h3>等待检索</h3>
+          <p>输入图号、元件代号、型号或功能描述后，结果会按图纸聚合并展示命中来源。</p>
+        </div>
+        <div class="search-result-list hidden" id="resultList"></div>
+      </section>
+    </main>
+
+    <script src="/static/search.js?v=20260623-2" defer></script>
+  </body>
+</html>

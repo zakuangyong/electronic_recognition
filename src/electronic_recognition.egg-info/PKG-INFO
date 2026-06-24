@@ -12,6 +12,11 @@ Requires-Dist: python-multipart>=0.0.18
 Requires-Dist: uvicorn>=0.34
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
+Provides-Extra: layout
+Provides-Extra: ocr
+Provides-Extra: search
+Requires-Dist: qdrant-client>=1.9; extra == "search"
+Requires-Dist: sentence-transformers>=3.0; extra == "search"
 
 # Electronic Recognition
 
@@ -38,15 +43,24 @@ PDF / PNG
   -> 候选参考图片召回
   -> 图纸页面 + 参考图片多模态识别
   -> 数量和坐标归一化
+  -> 自定义规则层组合判断
   -> API JSON + 前端表格和原图标注
 ```
 
-组件知识库位于：
+知识库分为两个独立层级：
 
 ```text
+# 单元件识别层：参与视觉参考图召回和元件名称修正
 data/index/components.json
 data/index/assets/components/
+
+# 自定义规则层：在单元件识别完成后判断组合关系
+data/index/custom_rules.json
+data/index/assets/rules/
 ```
+
+自定义规则不会作为单元件候选项参与识别，组合结果单独输出到
+`detected_combinations`。
 
 ## 安装
 
@@ -75,6 +89,20 @@ ER_LLM_MODEL=your-vision-model
 ## 启动
 
 ```powershell
+er
+```
+
+默认使用 `8892` 端口。
+
+如果需要指定端口，可执行：
+
+```powershell
+er --port 8899
+```
+
+兼容写法仍然可用：
+
+```powershell
 electronic-recognition --port 8892
 ```
 
@@ -83,6 +111,19 @@ electronic-recognition --port 8892
 ```text
 http://127.0.0.1:8892
 ```
+
+知识库管理页：
+
+```text
+http://127.0.0.1:8892/knowledge
+```
+
+管理页支持：
+
+1. 单元件知识库查询、新增、编辑、删除与图片维护；
+2. 组合元件查询、新增、编辑、启停、删除与图片维护；
+3. 组合元件成员编排，可从现有单元件中手动选择成员形成规则；
+4. 规则保存前校验与试运行。
 
 ## API
 

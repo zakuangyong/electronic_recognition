@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>电气元件识别</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260623-2" />
   </head>
   <body>
     <header class="app-header">
@@ -12,8 +12,12 @@
         <p>Electronic Recognition</p>
         <h1>电气元件识别工作台</h1>
       </div>
-      <div class="status" id="systemStatus">
-        <span></span><b>连接中</b>
+      <div class="header-actions">
+        <a class="knowledge-entry" href="/search">图纸检索</a>
+        <a class="knowledge-entry" href="/knowledge">知识库管理</a>
+        <div class="status" id="systemStatus">
+          <span></span><b>连接中</b>
+        </div>
       </div>
     </header>
 
@@ -52,65 +56,6 @@
             <span>开始识别</span><i></i>
           </button>
           <p class="message" id="formMessage" role="alert"></p>
-
-          <section class="knowledge-preview" aria-labelledby="knowledgePreviewTitle">
-            <div class="preview-heading">
-              <div>
-                <p>KNOWLEDGE</p>
-                <h3 id="knowledgePreviewTitle">知识库预览</h3>
-              </div>
-              <span class="preview-count" id="knowledgePreviewCount">加载中</span>
-            </div>
-
-            <div class="knowledge-kind-switch" role="tablist" aria-label="知识库类型">
-              <button
-                class="active"
-                type="button"
-                role="tab"
-                aria-selected="true"
-                data-knowledge-kind="component"
-              >
-                单元件
-                <span id="componentKindCount">--</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected="false"
-                data-knowledge-kind="rule"
-              >
-                组合元件
-                <span id="ruleKindCount">--</span>
-              </button>
-            </div>
-
-            <label class="preview-search">
-              <span>筛选样本</span>
-              <input
-                id="knowledgeSearch"
-                type="search"
-                placeholder="输入名称、类型或 ID"
-                autocomplete="off"
-              />
-            </label>
-
-            <article class="knowledge-feature hidden" id="knowledgeFeature"></article>
-            <div class="knowledge-gallery hidden" id="knowledgeGallery"></div>
-            <p class="preview-empty hidden" id="knowledgeEmpty"></p>
-            <nav class="knowledge-pagination hidden" id="knowledgePagination" aria-label="知识库分页">
-              <button id="knowledgePrev" type="button" aria-label="上一页">上一页</button>
-              <span id="knowledgePageInfo">第 1 / 1 页</span>
-              <button id="knowledgeNext" type="button" aria-label="下一页">下一页</button>
-              <label>
-                每页
-                <select id="knowledgePageSize" aria-label="每页显示数量">
-                  <option value="8">8</option>
-                  <option value="12" selected>12</option>
-                  <option value="24">24</option>
-                </select>
-              </label>
-            </nav>
-          </section>
         </form>
       </aside>
 
@@ -220,6 +165,6 @@
         </div>
       </section>
     </main>
-    <script src="/static/app.js" defer></script>
+    <script src="/static/app.js?v=20260623-2" defer></script>
   </body>
 </html>

@@ -69,6 +69,20 @@ ER_LLM_MODEL=your-vision-model
 ## 启动
 
 ```powershell
+er
+```
+
+默认使用 `8892` 端口。
+
+如果需要指定端口，可执行：
+
+```powershell
+er --port 8899
+```
+
+兼容写法仍然可用：
+
+```powershell
 electronic-recognition --port 8892
 ```
 
@@ -77,6 +91,19 @@ electronic-recognition --port 8892
 ```text
 http://127.0.0.1:8892
 ```
+
+知识库管理页：
+
+```text
+http://127.0.0.1:8892/knowledge
+```
+
+管理页支持：
+
+1. 单元件知识库查询、新增、编辑、删除与图片维护；
+2. 组合元件查询、新增、编辑、启停、删除与图片维护；
+3. 组合元件成员编排，可从现有单元件中手动选择成员形成规则；
+4. 规则保存前校验与试运行。
 
 ## API
 

@@ -22,10 +22,22 @@ def parse_document(
     if suffix == ".png":
         output = output_dir / "page-1.png"
         with Image.open(source) as image:
-            ImageOps.exif_transpose(image).convert("RGB").save(output)
+            rendered = ImageOps.exif_transpose(image).convert("RGB")
+            width, height = rendered.size
+            rendered.save(output)
         return ParsedDocument(
             filename=source.name,
-            pages=[ParsedPage(1, "", str(output))],
+            pages=[
+                ParsedPage(
+                    1,
+                    "",
+                    str(output),
+                    width=width,
+                    height=height,
+                    text_length=0,
+                    has_text_layer=False,
+                )
+            ],
         )
     if suffix != ".pdf":
         raise ValueError("仅支持 PDF 或 PNG 格式。")
@@ -37,14 +49,20 @@ def parse_document(
     pages: list[ParsedPage] = []
     for index in range(count):
         output = output_dir / f"page-{index + 1}.png"
-        document[index].get_pixmap(
+        pixmap = document[index].get_pixmap(
             matrix=matrix, alpha=False
-        ).save(output)
+        )
+        pixmap.save(output)
+        text = reader.pages[index].extract_text() or ""
         pages.append(
             ParsedPage(
                 index + 1,
-                reader.pages[index].extract_text() or "",
+                text,
                 str(output),
+                width=int(pixmap.width),
+                height=int(pixmap.height),
+                text_length=len(text),
+                has_text_layer=bool(text.strip()),
             )
         )
     return ParsedDocument(source.name, pages)

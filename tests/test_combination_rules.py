@@ -386,3 +386,62 @@ def test_disabled_builtin_rule_is_not_evaluated() -> None:
         )
 
         assert not combinations
+
+
+def test_custom_rule_can_match_component_ids_by_reference_id() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        rules_path = root / "custom_rules.json"
+        rules_path.write_text(
+            json.dumps(
+                {
+                    "version": 2,
+                    "rules": [
+                        {
+                            "id": "component-id-rule",
+                            "name": "精确元件匹配",
+                            "engine": "declarative",
+                            "members": [
+                                {
+                                    "role": "熔断器",
+                                    "component_ids": ["fuse"],
+                                },
+                                {
+                                    "role": "指示灯",
+                                    "component_ids": ["lamp"],
+                                    "min_quantity": 2,
+                                },
+                            ],
+                        }
+                    ],
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        combinations = detect_combinations(
+            [
+                {
+                    "reference_id": "fuse",
+                    "label": "熔断器",
+                    "code": "FU1",
+                    "page": 1,
+                },
+                {
+                    "reference_id": "lamp",
+                    "label": "指示灯",
+                    "code": "HL1,HL2",
+                    "page": 1,
+                    "occurrence_count": 2,
+                },
+            ],
+            custom_rules=CustomRuleKnowledgeBase.load(rules_path),
+        )
+
+        result = next(
+            item
+            for item in combinations
+            if item["rule_id"] == "component-id-rule"
+        )
+        assert result["group_code"] == "FU1,HL1,HL2"

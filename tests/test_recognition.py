@@ -406,6 +406,7 @@ def test_hybrid_pipeline_recognizes_then_corrects_with_rag() -> None:
                 model="test",
                 catalog_candidate_limit=2,
                 recognition_mode="hybrid",
+                layout_routing_enabled=False,
             ),
             model=model,
         ).analyze(drawing, root / "work")
@@ -569,17 +570,64 @@ def test_analyze_returns_running_job_before_background_work(
         )
 
         response = api.analyze(drawing)
+        try:
+            assert response["status"] == "running"
+            assert response["result_id"]
+            assert response["steps_url"].endswith("/steps")
+            assert started[0]["started"] is True
+            result_dir = root / "result" / str(response["result_id"])
+            assert (result_dir / "input" / "drawing.png").is_file()
+            manifest = json.loads(
+                (result_dir / "manifest.json").read_text(encoding="utf-8")
+            )
+            assert manifest["status"] == "running"
+        finally:
+            api._release_result_id(str(response["result_id"]))
 
-        assert response["status"] == "running"
-        assert response["result_id"]
-        assert response["steps_url"].endswith("/steps")
-        assert started[0]["started"] is True
-        result_dir = root / "result" / str(response["result_id"])
-        assert (result_dir / "input" / "drawing.png").is_file()
-        manifest = json.loads(
-            (result_dir / "manifest.json").read_text(encoding="utf-8")
+
+def test_result_directory_uses_filename_and_replaces_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        monkeypatch.setattr(api, "RESULT_DIR", root / "result")
+        result_id, result_dir = api._create_result_dir("drawing.png")
+        (result_dir / "old-result.json").write_text("old", encoding="utf-8")
+
+        next_id, next_dir = api._create_result_dir("drawing.png")
+
+        assert result_id == "drawing.png"
+        assert next_id == result_id
+        assert next_dir == result_dir
+        assert not (next_dir / "old-result.json").exists()
+
+
+def test_analyze_rejects_concurrent_upload_for_same_filename(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        knowledge_path = root / "components.json"
+        knowledge_path.write_text(
+            json.dumps({"components": []}),
+            encoding="utf-8",
         )
-        assert manifest["status"] == "running"
+        monkeypatch.setattr(api, "RESULT_DIR", root / "result")
+        monkeypatch.setattr(api, "KNOWLEDGE_PATH", knowledge_path)
+        result_id = api._result_id_for_filename("drawing.png")
+        api._reserve_result_id(result_id)
+        try:
+            with pytest.raises(api.HTTPException) as exc_info:
+                api.analyze(
+                    UploadFile(
+                        filename="drawing.png",
+                        file=io.BytesIO(b"png"),
+                    )
+                )
+        finally:
+            api._release_result_id(result_id)
+
+        assert exc_info.value.status_code == 409
 
 
 def test_failed_tiles_keep_partial_recognition(
@@ -668,6 +716,7 @@ def test_failed_tiles_keep_partial_recognition(
                 api_key="test",
                 model="test",
                 recognition_mode="vision_first",
+                layout_routing_enabled=False,
             ),
             model=PartiallyFailingModel(),
         )

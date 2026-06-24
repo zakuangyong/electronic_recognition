@@ -1,15 +1,9 @@
 const state = {
   file: null,
   result: null,
-  knowledgeItems: [],
-  ruleItems: [],
-  filteredKnowledge: [],
-  selectedKnowledgeId: "",
-  knowledgeKind: "component",
-  knowledgePage: 1,
-  knowledgePageSize: 12,
   analysisToken: 0
 };
+const LAST_RESULT_KEY = "electronic-recognition:last-result-id";
 const $ = (id) => document.getElementById(id);
 const colors = [
   "#1769aa", "#d1495b", "#138a72", "#8a5cf6", "#d97706",
@@ -23,14 +17,6 @@ const elements = {
   message: $("formMessage"), status: $("systemStatus"), model: $("modelName"),
   count: $("componentCount"), customRuleCount: $("customRuleCount"),
   referenceLimit: $("referenceLimit"),
-  knowledgeCount: $("knowledgePreviewCount"), knowledgeSearch: $("knowledgeSearch"),
-  knowledgeFeature: $("knowledgeFeature"), knowledgeGallery: $("knowledgeGallery"),
-  knowledgeEmpty: $("knowledgeEmpty"),
-  knowledgePagination: $("knowledgePagination"),
-  knowledgePrev: $("knowledgePrev"), knowledgeNext: $("knowledgeNext"),
-  knowledgePageInfo: $("knowledgePageInfo"),
-  knowledgePageSize: $("knowledgePageSize"),
-  componentKindCount: $("componentKindCount"), ruleKindCount: $("ruleKindCount"),
   empty: $("emptyState"), loading: $("loadingState"), content: $("resultContent"),
   download: $("downloadButton"), typeTotal: $("typeTotal"),
   instanceTotal: $("instanceTotal"), elapsed: $("elapsedTime"),
@@ -49,7 +35,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   bindEvents();
-  await Promise.all([loadConfig(), loadKnowledge()]);
+  await Promise.all([loadConfig(), restoreLastResult()]);
 }
 
 function bindEvents() {
@@ -64,21 +50,6 @@ function bindEvents() {
   elements.remove.addEventListener("click", clearFile);
   elements.form.addEventListener("submit", analyze);
   elements.download.addEventListener("click", downloadJson);
-  elements.knowledgeSearch.addEventListener("input", () => {
-    state.knowledgePage = 1;
-    applyKnowledgeFilter();
-  });
-  elements.knowledgeGallery.addEventListener("click", handleKnowledgeSelect);
-  document.querySelectorAll("[data-knowledge-kind]").forEach((button) => {
-    button.addEventListener("click", () => setKnowledgeKind(button.dataset.knowledgeKind));
-  });
-  elements.knowledgePrev.addEventListener("click", () => changeKnowledgePage(-1));
-  elements.knowledgeNext.addEventListener("click", () => changeKnowledgePage(1));
-  elements.knowledgePageSize.addEventListener("change", () => {
-    state.knowledgePageSize = Number(elements.knowledgePageSize.value) || 12;
-    state.knowledgePage = 1;
-    renderKnowledgePreview();
-  });
   document.querySelectorAll(".tab").forEach((tab) => {
     const panel = $(`${tab.dataset.tab}Panel`);
     tab.setAttribute("role", "tab");
@@ -112,58 +83,6 @@ async function loadConfig() {
   }
 }
 
-async function loadKnowledge() {
-  try {
-    const [componentResponse, ruleResponse] = await Promise.all([
-      fetch("/api/knowledge"),
-      fetch("/api/custom-rules")
-    ]);
-    const [componentPayload, rulePayload] = await Promise.all([
-      componentResponse.json(),
-      ruleResponse.json()
-    ]);
-    if (!componentResponse.ok) {
-      throw new Error(componentPayload.detail || "单元件知识库读取失败");
-    }
-    if (!ruleResponse.ok) {
-      throw new Error(rulePayload.detail || "组合规则库读取失败");
-    }
-    state.knowledgeItems = (componentPayload.items || []).map((item) => ({
-      id: String(item.id || ""),
-      label: String(item.label || "未命名"),
-      componentType: String(item.component_type || ""),
-      imageUrl: String(item.image_url || ""),
-      kind: "component",
-      detail: "单元件参考样本"
-    }));
-    state.ruleItems = (rulePayload.items || []).map((item) => ({
-      id: String(item.id || ""),
-      label: String(item.name || "未命名组合"),
-      componentType: `${
-        item.engine === "builtin" ? "内置组合规则" : "自定义组合"
-      } · ${Number(item.member_count) || 0} 个成员`,
-      imageUrl: String(item.image_url || ""),
-      kind: "rule",
-      detail: String(item.description || ""),
-      enabled: Boolean(item.enabled),
-      engine: String(item.engine || "declarative"),
-      scope: String(item.scope || "")
-    }));
-    elements.componentKindCount.textContent = state.knowledgeItems.length;
-    elements.ruleKindCount.textContent = state.ruleItems.length;
-    applyKnowledgeFilter();
-  } catch (error) {
-    state.knowledgeItems = [];
-    state.ruleItems = [];
-    state.filteredKnowledge = [];
-    elements.knowledgeCount.textContent = "不可用";
-    elements.knowledgeFeature.classList.add("hidden");
-    elements.knowledgeGallery.classList.add("hidden");
-    elements.knowledgeEmpty.classList.remove("hidden");
-    elements.knowledgeEmpty.textContent = error.message;
-  }
-}
-
 function setFile(file) {
   if (!file) return;
   const extension = file.name.split(".").pop().toLowerCase();
@@ -185,7 +104,9 @@ function clearFile() {
   state.analysisToken += 1;
   state.file = null; elements.input.value = "";
   elements.card.classList.add("hidden"); elements.drop.classList.remove("hidden");
-  elements.submit.disabled = true; clearResult();
+  elements.submit.disabled = true;
+  sessionStorage.removeItem(LAST_RESULT_KEY);
+  clearResult();
 }
 
 function clearResult() {
@@ -194,130 +115,6 @@ function clearResult() {
   elements.loading.classList.add("hidden");
   elements.empty.classList.remove("hidden");
   elements.download.classList.add("hidden");
-}
-
-function activeKnowledgeItems() {
-  return state.knowledgeKind === "rule" ? state.ruleItems : state.knowledgeItems;
-}
-
-function setKnowledgeKind(kind) {
-  if (!["component", "rule"].includes(kind) || kind === state.knowledgeKind) return;
-  state.knowledgeKind = kind;
-  state.knowledgePage = 1;
-  state.selectedKnowledgeId = "";
-  elements.knowledgeSearch.value = "";
-  document.querySelectorAll("[data-knowledge-kind]").forEach((button) => {
-    const active = button.dataset.knowledgeKind === kind;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-selected", String(active));
-  });
-  elements.knowledgeSearch.placeholder = kind === "rule"
-    ? "输入组合名称、说明或 ID"
-    : "输入名称、类型或 ID";
-  applyKnowledgeFilter();
-}
-
-function applyKnowledgeFilter() {
-  const keyword = elements.knowledgeSearch.value.trim().toLowerCase();
-  const filtered = activeKnowledgeItems().filter((item) => {
-    const searchable = [
-      item.id,
-      item.label,
-      item.componentType,
-      item.detail
-    ].join(" ").toLowerCase();
-    return !keyword || searchable.includes(keyword);
-  });
-  state.filteredKnowledge = filtered;
-  if (!filtered.some((item) => item.id === state.selectedKnowledgeId)) {
-    state.selectedKnowledgeId = filtered[0]?.id || "";
-  }
-  renderKnowledgePreview();
-}
-
-function renderKnowledgePreview() {
-  const total = activeKnowledgeItems().length;
-  const filtered = state.filteredKnowledge;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / state.knowledgePageSize));
-  state.knowledgePage = Math.min(Math.max(1, state.knowledgePage), pageCount);
-  const start = (state.knowledgePage - 1) * state.knowledgePageSize;
-  const visibleItems = filtered.slice(start, start + state.knowledgePageSize);
-  let selected = visibleItems.find(
-    (item) => item.id === state.selectedKnowledgeId
-  ) || null;
-  if (!selected && visibleItems.length) {
-    selected = visibleItems[0];
-    state.selectedKnowledgeId = selected.id;
-  }
-  const kindLabel = state.knowledgeKind === "rule" ? "组合元件" : "单元件";
-  elements.knowledgeCount.textContent = total
-    ? `${filtered.length ? start + 1 : 0}-${Math.min(start + visibleItems.length, filtered.length)} / ${filtered.length}`
-    : "0 项";
-  elements.knowledgePageInfo.textContent = `第 ${state.knowledgePage} / ${pageCount} 页`;
-  elements.knowledgePrev.disabled = state.knowledgePage <= 1;
-  elements.knowledgeNext.disabled = state.knowledgePage >= pageCount;
-  elements.knowledgePagination.classList.toggle("hidden", filtered.length === 0);
-  elements.knowledgeEmpty.classList.toggle("hidden", filtered.length > 0);
-  elements.knowledgeFeature.classList.toggle("hidden", !selected);
-  elements.knowledgeGallery.classList.toggle("hidden", !visibleItems.length);
-  if (!filtered.length) {
-    elements.knowledgeFeature.innerHTML = "";
-    elements.knowledgeGallery.innerHTML = "";
-    elements.knowledgeEmpty.textContent = total
-      ? `没有匹配的${kindLabel}。`
-      : `当前没有可预览的${kindLabel}。`;
-    return;
-  }
-  if (selected) {
-    const status = selected.kind === "rule"
-      ? `<span class="knowledge-status ${selected.enabled ? "enabled" : "disabled"}">${selected.enabled ? "已启用" : "已停用"}</span>`
-      : "";
-    elements.knowledgeFeature.innerHTML = `<div class="knowledge-image-wrap">
-        ${selected.imageUrl
-          ? `<img src="${escapeHtml(selected.imageUrl)}" alt="${escapeHtml(selected.label)} 参考图" />`
-          : `<span class="knowledge-no-image">暂无参考图</span>`}
-      </div>
-      <div class="knowledge-meta">
-        <div class="knowledge-title-row"><strong>${escapeHtml(selected.label)}</strong>${status}</div>
-        <span>${escapeHtml(selected.componentType || "未分类")}</span>
-        ${selected.detail ? `<p>${escapeHtml(selected.detail)}</p>` : ""}
-        <small>ID: ${escapeHtml(selected.id)}</small>
-      </div>`;
-  }
-  elements.knowledgeGallery.innerHTML = visibleItems.map((item) => `<button
-      class="knowledge-thumb${item.id === state.selectedKnowledgeId ? " active" : ""}"
-      type="button"
-      data-knowledge-id="${escapeHtml(item.id)}"
-      aria-pressed="${item.id === state.selectedKnowledgeId ? "true" : "false"}"
-    >
-      ${item.imageUrl
-        ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.label)} 缩略图" />`
-        : `<span class="knowledge-thumb-placeholder">无图</span>`}
-      <span>${escapeHtml(item.label)}</span>
-    </button>`).join("");
-}
-
-function handleKnowledgeSelect(event) {
-  const button = event.target.closest("[data-knowledge-id]");
-  if (!button) return;
-  state.selectedKnowledgeId = button.dataset.knowledgeId || "";
-  renderKnowledgePreview();
-}
-
-function changeKnowledgePage(offset) {
-  const pageCount = Math.max(
-    1,
-    Math.ceil(state.filteredKnowledge.length / state.knowledgePageSize)
-  );
-  const nextPage = Math.min(pageCount, Math.max(1, state.knowledgePage + offset));
-  if (nextPage === state.knowledgePage) return;
-  state.knowledgePage = nextPage;
-  const firstItem = state.filteredKnowledge[
-    (state.knowledgePage - 1) * state.knowledgePageSize
-  ];
-  state.selectedKnowledgeId = firstItem?.id || "";
-  renderKnowledgePreview();
-  elements.knowledgeFeature.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 async function analyze(event) {
@@ -333,12 +130,19 @@ async function analyze(event) {
     if (!response.ok) {
       const message = errorMessage(payload, "识别失败");
       if (payload?.detail?.result_id) {
+        sessionStorage.setItem(
+          LAST_RESULT_KEY,
+          String(payload.detail.result_id)
+        );
         const failed = await loadSavedResult(payload.detail);
         state.result = failed; render(failed);
         elements.message.textContent = message;
         return;
       }
       throw new Error(message);
+    }
+    if (payload?.result_id) {
+      sessionStorage.setItem(LAST_RESULT_KEY, String(payload.result_id));
     }
     const result = await waitForAnalysis(payload, token);
     if (token !== state.analysisToken) return;
@@ -353,6 +157,58 @@ async function analyze(event) {
     elements.empty.classList.remove("hidden");
   } finally {
     if (token === state.analysisToken) setLoading(false);
+  }
+}
+
+async function restoreLastResult() {
+  const restoreToken = state.analysisToken;
+  const queryResultId = new URLSearchParams(window.location.search).get(
+    "result_id"
+  );
+  const resultId = queryResultId || sessionStorage.getItem(LAST_RESULT_KEY);
+  if (!resultId) return;
+  try {
+    const manifestResponse = await fetch(
+      `/api/results/${encodeURIComponent(resultId)}/manifest`,
+      { cache: "no-store" }
+    );
+    if (restoreToken !== state.analysisToken) return;
+    if (manifestResponse.ok) {
+      const manifest = await manifestResponse.json();
+      if (manifest.status === "running") {
+        const token = ++state.analysisToken;
+        setLoading(true);
+        try {
+          const result = await waitForAnalysis({
+            result_id: resultId,
+            result_url: `/api/results/${encodeURIComponent(resultId)}`,
+            steps_url: `/api/results/${encodeURIComponent(resultId)}/steps`
+          }, token);
+          if (token !== state.analysisToken) return;
+          state.result = result;
+          render(result);
+        } finally {
+          if (token === state.analysisToken) setLoading(false);
+        }
+        return;
+      }
+    }
+    const result = await loadSavedResult({
+      result_id: resultId,
+      result_url: `/api/results/${encodeURIComponent(resultId)}`
+    });
+    if (restoreToken !== state.analysisToken) return;
+    state.result = result;
+    render(result);
+  } catch (error) {
+    if (restoreToken !== state.analysisToken) return;
+    if (
+      !queryResultId &&
+      sessionStorage.getItem(LAST_RESULT_KEY) === resultId
+    ) {
+      sessionStorage.removeItem(LAST_RESULT_KEY);
+    }
+    elements.message.textContent = `最近一次识别结果恢复失败：${error.message}`;
   }
 }
 
@@ -479,6 +335,9 @@ function delay(milliseconds) {
 }
 
 function render(result) {
+  if (result?.result_id) {
+    sessionStorage.setItem(LAST_RESULT_KEY, String(result.result_id));
+  }
   const groups = groupComponents(result.detected_components || []);
   const instances = groups.reduce((sum, group) => sum + group.count, 0);
   elements.empty.classList.add("hidden");
@@ -556,7 +415,7 @@ function renderPage(page, groups) {
       return `<div class="component-box" style="--color:${group.color};left:${x0 / 10}%;top:${y0 / 10}%;width:${(x1 - x0) / 10}%;height:${(y1 - y0) / 10}%"></div>`;
     })
   ).join("");
-  return `<figure>
+  return `<figure id="page-${pageNumber}">
     <figcaption>第 ${pageNumber} 页 · ${boxes ? "已标注识别位置" : "无定位框"}</figcaption>
     <div class="page-canvas">
       <img src="${escapeHtml(page.data_url)}" alt="第 ${pageNumber} 页图纸预览" />

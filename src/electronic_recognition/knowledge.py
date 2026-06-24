@@ -53,7 +53,13 @@ class ComponentKnowledgeBase:
                 "variant_count": len(sample.variant_images),
             }
             for sample in (
-                self.components if components is None else components
+                [
+                    item
+                    for item in (
+                        self.components if components is None else components
+                    )
+                    if item.enabled
+                ]
             )
         ]
 
@@ -70,7 +76,13 @@ class ComponentKnowledgeBase:
         query_tokens = set(_tokens(query))
         ranked: list[tuple[float, ComponentSample]] = []
         for sample in (
-            self.components if components is None else components
+            [
+                item
+                for item in (
+                    self.components if components is None else components
+                )
+                if item.enabled
+            ]
         ):
             searchable = " ".join(
                 [

@@ -11,6 +11,7 @@ from typing import Any
 class RuleMember:
     role: str
     min_quantity: int = 1
+    component_ids: list[str] = field(default_factory=list)
     code_patterns: list[str] = field(default_factory=list)
     label_keywords: list[str] = field(default_factory=list)
 
@@ -29,6 +30,8 @@ class CustomRule:
     aliases: list[str] = field(default_factory=list)
     notes: str = ""
     source: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 class CustomRuleKnowledgeBase:
@@ -74,9 +77,10 @@ def evaluate_custom_rules(
     *,
     open_symbols: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
+    primary_records = detected_components or open_symbols or []
     records = [
         item
-        for item in (open_symbols or detected_components)
+        for item in primary_records
         if isinstance(item, dict)
     ]
     results: list[dict[str, Any]] = []
@@ -184,6 +188,12 @@ def _match_record(
     requirement: RuleMember,
     record: dict[str, Any],
 ) -> dict[str, Any] | None:
+    matched_component_ids = [
+        component_id
+        for component_id in requirement.component_ids
+        if component_id.casefold()
+        == str(record.get("reference_id", "")).strip().casefold()
+    ]
     codes = _codes(record.get("code"))
     matched_codes = [
         code
@@ -207,11 +217,13 @@ def _match_record(
         for keyword in requirement.label_keywords
     )
     criteria_configured = bool(
-        requirement.code_patterns or requirement.label_keywords
+        requirement.component_ids
+        or requirement.code_patterns
+        or requirement.label_keywords
     )
     if not criteria_configured:
         return None
-    if not matched_codes and not keyword_match:
+    if not matched_component_ids and not matched_codes and not keyword_match:
         return None
     record_quantity = _quantity(record)
     quantity = (
@@ -229,6 +241,32 @@ def _match_record(
             or record.get("component_type")
             or ""
         ).strip(),
+    }
+
+
+def validate_rule_payload(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    role = str(payload.get("role", "")).strip()
+    if not role:
+        raise ValueError("组合成员角色不能为空。")
+    component_ids = _unique(payload.get("component_ids", []))
+    code_patterns = _unique(payload.get("code_patterns", []))
+    label_keywords = _unique(payload.get("label_keywords", []))
+    if not (component_ids or code_patterns or label_keywords):
+        raise ValueError("组合成员至少需要一种匹配条件。")
+    for pattern in code_patterns:
+        re.compile(pattern)
+    try:
+        min_quantity = max(1, int(payload.get("min_quantity", 1)))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("组合成员最小数量不合法。") from exc
+    return {
+        "role": role,
+        "min_quantity": min_quantity,
+        "component_ids": component_ids,
+        "code_patterns": code_patterns,
+        "label_keywords": label_keywords,
     }
 
 

@@ -4,4 +4,6 @@ __pycache__/
 .pytest_cache/
 data/cache/model/*.json
 data/output/
+data/search/drawings.db*
+data/search/qdrant/
 result/

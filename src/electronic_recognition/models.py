@@ -19,6 +19,9 @@ class ComponentSample:
     source: str = ""
     dhash: str = ""
     color_histogram: list[float] = field(default_factory=list)
+    enabled: bool = True
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass(slots=True)
@@ -26,6 +29,10 @@ class ParsedPage:
     number: int
     text: str
     image_path: str
+    width: int = 0
+    height: int = 0
+    text_length: int = 0
+    has_text_layer: bool = False
 
 
 @dataclass(slots=True)
@@ -53,6 +60,7 @@ class RecognitionResult:
         default_factory=dict
     )
     component_table: dict[str, Any] = field(default_factory=dict)
+    page_layouts: list[dict[str, Any]] = field(default_factory=list)
     recognition_steps: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
