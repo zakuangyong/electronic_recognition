@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
 from .config import Settings
@@ -48,9 +48,15 @@ from .search.sqlite_store import DrawingSearchStore
 
 
 app = FastAPI(title="Electronic Recognition", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parents[1]
-STATIC_DIR = PACKAGE_DIR / "static"
 KNOWLEDGE_PATH = PROJECT_ROOT / "data" / "index" / "components.json"
 CUSTOM_RULES_PATH = PROJECT_ROOT / "data" / "index" / "custom_rules.json"
 SEARCH_DEMO_QUERIES_PATH = PROJECT_ROOT / "data" / "search" / "demo_queries.json"
@@ -83,7 +89,6 @@ STEP_FILES = {
     "document": "steps/00-document.json",
     "legacy_detected_components": "steps/04-detected-components.json",
 }
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 def _close_search_clients() -> None:
@@ -100,30 +105,6 @@ def _close_search_clients() -> None:
 
 
 atexit.register(_close_search_clients)
-
-
-@app.get("/", include_in_schema=False)
-def index() -> FileResponse:
-    return FileResponse(
-        STATIC_DIR / "index.html",
-        headers={"Cache-Control": "no-cache"},
-    )
-
-
-@app.get("/knowledge", include_in_schema=False)
-def knowledge_page() -> FileResponse:
-    return FileResponse(
-        STATIC_DIR / "knowledge.html",
-        headers={"Cache-Control": "no-cache"},
-    )
-
-
-@app.get("/search", include_in_schema=False)
-def search_page() -> FileResponse:
-    return FileResponse(
-        STATIC_DIR / "search.html",
-        headers={"Cache-Control": "no-cache"},
-    )
 
 
 @app.get("/health")
@@ -639,9 +620,10 @@ def analyze(
         _release_result_id(result_id)
         raise
     return {
+        "task_id": result_id,
         "result_id": result_id,
         "status": "running",
-        "result_url": f"/api/results/{result_id}",
+        "result_url": f"/results/{result_id}",
         "steps_url": f"/api/results/{result_id}/steps",
     }
 
