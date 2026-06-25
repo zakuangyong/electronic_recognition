@@ -18,7 +18,7 @@ def _png_bytes() -> bytes:
     return buffer.getvalue()
 
 
-def test_management_page_route_and_component_crud_flow(monkeypatch) -> None:
+def test_component_crud_flow(monkeypatch) -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         components_path = root / "components.json"
@@ -35,9 +35,6 @@ def test_management_page_route_and_component_crud_flow(monkeypatch) -> None:
         )
         monkeypatch.setattr(api, "KNOWLEDGE_PATH", components_path)
         monkeypatch.setattr(api, "CUSTOM_RULES_PATH", rules_path)
-
-        page = api.knowledge_page()
-        assert Path(page.path).name == "knowledge.html"
 
         created = api.create_knowledge_item(
             {

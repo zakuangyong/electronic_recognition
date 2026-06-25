@@ -33,6 +33,3 @@ er-rebuild-search-index = "electronic_recognition.search.rebuild:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.package-data]
-electronic_recognition = ["static/*"]

@@ -1,4 +1,0 @@
-[console_scripts]
-electronic-recognition = electronic_recognition.cli:main
-er = electronic_recognition.cli:main
-er-rebuild-search-index = electronic_recognition.search.rebuild:main

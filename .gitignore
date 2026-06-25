@@ -7,5 +7,6 @@ data/output/
 data/search/drawings.db*
 data/search/qdrant/
 result/
+src/*.egg-info/
 web/node_modules/
 web/dist/
