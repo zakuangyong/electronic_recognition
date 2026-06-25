@@ -84,57 +84,67 @@
           <p class="message" id="searchMessage" role="status" aria-live="polite"></p>
         </form>
 
-        <section class="search-index-card" aria-labelledby="indexTitle">
-          <div class="preview-heading">
+        <details class="search-index-card search-index-details" id="indexDetails">
+          <summary class="preview-heading index-summary" aria-labelledby="indexTitle">
             <div>
               <p>INDEX</p>
               <h3 id="indexTitle">索引状态</h3>
             </div>
-            <span class="preview-count" id="indexMode">--</span>
+            <span class="index-summary-right">
+              <span class="preview-count" id="indexMode">--</span>
+              <span class="index-chevron" aria-hidden="true"></span>
+            </span>
+          </summary>
+          <div class="index-body">
+            <dl class="search-stats">
+              <div><dt>图纸</dt><dd id="indexedDrawings">--</dd></div>
+              <div><dt>Chunks</dt><dd id="indexedChunks">--</dd></div>
+              <div><dt>向量点数</dt><dd id="vectorPoints">--</dd></div>
+              <div><dt>失败任务</dt><dd id="failedJobs">--</dd></div>
+            </dl>
+            <div class="health-grid">
+              <article class="health-card" id="sqliteCard">
+                <span>SQLite</span>
+                <strong id="sqliteState">--</strong>
+                <p id="sqliteDetail">索引库状态</p>
+              </article>
+              <article class="health-card" id="embeddingCard">
+                <span>Embedding</span>
+                <strong id="embeddingState">--</strong>
+                <p id="embeddingDetail">模型加载状态</p>
+              </article>
+              <article class="health-card" id="qdrantCard">
+                <span>Qdrant</span>
+                <strong id="qdrantState">--</strong>
+                <p id="qdrantDetail">向量库状态</p>
+              </article>
+              <article class="health-card" id="degradedCard">
+                <span>降级状态</span>
+                <strong id="degradedState">--</strong>
+                <p id="degradedDetail">当前服务模式</p>
+              </article>
+            </div>
           </div>
-          <dl class="search-stats">
-            <div><dt>图纸</dt><dd id="indexedDrawings">--</dd></div>
-            <div><dt>Chunks</dt><dd id="indexedChunks">--</dd></div>
-            <div><dt>向量点数</dt><dd id="vectorPoints">--</dd></div>
-            <div><dt>失败任务</dt><dd id="failedJobs">--</dd></div>
-          </dl>
-          <div class="health-grid">
-            <article class="health-card" id="sqliteCard">
-              <span>SQLite</span>
-              <strong id="sqliteState">--</strong>
-              <p id="sqliteDetail">索引库状态</p>
-            </article>
-            <article class="health-card" id="embeddingCard">
-              <span>Embedding</span>
-              <strong id="embeddingState">--</strong>
-              <p id="embeddingDetail">模型加载状态</p>
-            </article>
-            <article class="health-card" id="qdrantCard">
-              <span>Qdrant</span>
-              <strong id="qdrantState">--</strong>
-              <p id="qdrantDetail">向量库状态</p>
-            </article>
-            <article class="health-card" id="degradedCard">
-              <span>降级状态</span>
-              <strong id="degradedState">--</strong>
-              <p id="degradedDetail">当前服务模式</p>
-            </article>
-          </div>
-        </section>
+        </details>
 
-        <section class="search-index-card" aria-labelledby="demoTitle">
-          <div class="preview-heading">
+        <details class="search-index-card search-index-details" id="demoDetails">
+          <summary class="preview-heading index-summary" aria-labelledby="demoTitle">
             <div>
               <p>DEMO</p>
               <h3 id="demoTitle">演示查询集</h3>
             </div>
-            <span class="preview-count" id="demoCount">0 组</span>
+            <span class="index-summary-right">
+              <span class="preview-count" id="demoCount">0 组</span>
+              <span class="index-chevron" aria-hidden="true"></span>
+            </span>
+          </summary>
+          <div class="index-body">
+            <div class="demo-query-groups" id="demoQueries"></div>
+            <p class="demo-tip">
+              点击任一查询可自动填入检索框，并保留当前模式进行对照演示。
+            </p>
           </div>
-          <div class="demo-query-groups" id="demoQueries"></div>
-          <p class="demo-tip">
-            点击任一查询可自动填入检索框，并保留当前模式进行对照演示。
-          </p>
-        </section>
+        </details>
       </section>
 
       <section class="search-results-panel" aria-labelledby="resultsTitle">

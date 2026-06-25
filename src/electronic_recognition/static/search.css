@@ -3,6 +3,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+  grid-template-areas: "filters results";
   overflow: hidden;
 }
 
@@ -12,6 +13,7 @@
 }
 
 .search-panel {
+  grid-area: filters;
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -20,6 +22,7 @@
 }
 
 .search-results-panel {
+  grid-area: results;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -160,6 +163,81 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f8fafc;
+}
+
+.search-index-details {
+  padding: 0;
+}
+
+.search-index-details > summary {
+  padding: 16px;
+  border-radius: 8px;
+  list-style: none;
+}
+
+.search-index-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.search-index-details[open] > summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.index-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.index-summary-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.index-chevron {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  border: 1px solid #c9d6e2;
+  border-radius: 999px;
+  position: relative;
+  background: #fff;
+}
+
+.index-chevron::before,
+.index-chevron::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 2px;
+  background: #36556f;
+  transform-origin: center;
+  opacity: .85;
+}
+
+.index-chevron::before {
+  transform: translate(-60%, -50%) rotate(45deg);
+}
+
+.index-chevron::after {
+  transform: translate(-40%, -50%) rotate(-45deg);
+}
+
+.search-index-details[open] .index-chevron::before {
+  transform: translate(-60%, -50%) rotate(-45deg);
+}
+
+.search-index-details[open] .index-chevron::after {
+  transform: translate(-40%, -50%) rotate(45deg);
+}
+
+.index-body {
+  padding: 0 16px 16px;
 }
 
 .search-stats {
@@ -483,6 +561,9 @@
     height: auto;
     min-height: calc(100dvh - 82px);
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "results"
+      "filters";
     overflow: visible;
   }
 
