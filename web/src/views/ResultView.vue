@@ -141,6 +141,7 @@ onBeforeUnmount(() => {
       <RouterLink class="knowledge-entry" to="/workbench">识别工作台</RouterLink>
       <RouterLink class="knowledge-entry" to="/search">图纸检索</RouterLink>
       <RouterLink class="knowledge-entry" to="/drawing-diff">图纸比对</RouterLink>
+      <RouterLink class="knowledge-entry" to="/drawing-correction">图纸纠错</RouterLink>
       <RouterLink class="knowledge-entry" to="/knowledge">知识库管理</RouterLink>
     </div>
   </header>

@@ -13,6 +13,7 @@ function createTestRouter() {
       { path: '/knowledge', component: { template: '<div>Knowledge</div>' } },
       { path: '/search', component: { template: '<div>Search</div>' } },
       { path: '/drawing-diff', component: { template: '<div>Diff</div>' } },
+      { path: '/drawing-correction', component: { template: '<div>Correction</div>' } },
     ],
   })
 }

@@ -128,6 +128,7 @@ onMounted(async () => {
         <RouterLink class="chip active" to="/workbench">识别工作台</RouterLink>
         <RouterLink class="chip" to="/search">图纸检索</RouterLink>
         <RouterLink class="chip" to="/drawing-diff">图纸比对</RouterLink>
+        <RouterLink class="chip" to="/drawing-correction">图纸纠错</RouterLink>
         <RouterLink class="chip" to="/knowledge">知识库管理</RouterLink>
       </div>
     </div>
