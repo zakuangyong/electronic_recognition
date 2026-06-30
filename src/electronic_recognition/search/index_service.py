@@ -169,11 +169,22 @@ class DrawingIndexService:
                 failed.append(
                     {"result_id": result_dir.name, "error": str(exc)}
                 )
+        # 全量重建时清理孤儿条目：result/ 目录已被删除、但索引库里仍残留的记录。
+        # 定向重建(指定 result_id)不做清理，避免误删其它图纸。
+        pruned: list[str] = []
+        if not result_id:
+            existing_ids = {path.name for path in result_dirs}
+            for stale_id in self.store.list_result_ids():
+                if stale_id not in existing_ids:
+                    self.delete_result(stale_id)
+                    pruned.append(stale_id)
         return {
             "scanned": len(result_dirs),
             "indexed": indexed,
             "skipped": skipped,
             "failed": failed,
+            "pruned": len(pruned),
+            "pruned_result_ids": pruned,
             "force": force,
             "mode": mode,
             "chunks": chunks,

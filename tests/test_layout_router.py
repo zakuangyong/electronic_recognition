@@ -7,7 +7,6 @@ from PIL import Image
 from electronic_recognition.config import Settings
 from electronic_recognition.layout_router import LayoutRouter
 from electronic_recognition.models import ParsedDocument, ParsedPage
-from electronic_recognition.pipeline import _build_page_views, _build_routed_page_views
 
 
 def test_layout_router_excludes_structured_regions_from_component_views(
@@ -40,19 +39,12 @@ def test_layout_router_excludes_structured_regions_from_component_views(
         component_table={},
     )
 
-    legacy_views = _build_page_views(page_path, tmp_path / "tiles", 1, 2, 0.0)
-    routed_views = _build_routed_page_views(
-        page_path,
-        tmp_path / "routed",
-        1,
-        settings,
-        layouts[0],
-        legacy_views,
-    )
-
     component_views = [
-        view for view in routed_views if view.get("route") == "component"
+        region for region in layouts[0].regions if region.route == "component"
     ]
     assert layouts[0].regions[0].region_type == "title_block"
-    assert all(view["bounds"][0] >= 500 or view["bounds"][1] >= 500 for view in component_views)
+    assert all(
+        region.bounds[0] >= 500 or region.bounds[1] >= 500
+        for region in component_views
+    )
     assert len(component_views) < 4

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B 方案 - 流程编排台</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: rgba(255,255,255,0.88);
+      --line: #d8e0e8;
+      --text: #25384a;
+      --muted: #6d8093;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.1);
+      --green: #1f8f64;
+      --shadow: 0 18px 44px rgba(31, 55, 86, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 22%),
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.82)),
+        var(--bg);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(216,224,232,0.9);
+      background: rgba(238,242,246,0.9);
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chip {
+      text-decoration: none;
+      color: var(--muted);
+      background: rgba(255,255,255,0.86);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .chip.active {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .wrap {
+      width: min(1460px, calc(100vw - 36px));
+      margin: 26px auto 54px;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .hero, .summary {
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(216,224,232,0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+    }
+    .hero h2 { margin: 0 0 12px; font-size: 32px; }
+    .hero p, .summary li { color: var(--muted); line-height: 1.65; }
+    .flow-tags {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .flow-tags span {
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid rgba(37,99,235,0.14);
+    }
+    .screen {
+      background: rgba(248,250,252,0.78);
+      border: 1px solid rgba(216,224,232,0.95);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-top: 24px;
+    }
+    .screen-header {
+      padding: 20px 26px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,249,252,0.9));
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      color: #708395;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .screen-header h3 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .screen-header p {
+      margin: 8px 0 0;
+      max-width: 700px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .stat-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .stat {
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+      color: #4f667b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .canvas {
+      padding: 22px;
+      min-height: 700px;
+    }
+    .board {
+      display: grid;
+      grid-template-rows: 82px 112px 1fr;
+      gap: 14px;
+      min-height: 648px;
+    }
+    .top-strip, .stage-card, .lane, .side-card, .result-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .top-strip {
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-strip .title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #708395;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .top-strip h4 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .step-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .stage-card {
+      padding: 14px 16px;
+    }
+    .stage-card.active {
+      background: linear-gradient(180deg, rgba(37,99,235,0.12), rgba(255,255,255,0.94));
+      border-color: rgba(37,99,235,0.24);
+    }
+    .stage-card b {
+      display: block;
+      font-size: 18px;
+      margin-top: 8px;
+    }
+    .stage-card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) 320px;
+      gap: 14px;
+    }
+    .lane {
+      padding: 16px;
+    }
+    .lane .label, .side-card .label, .result-card .label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #72879c;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .lane h5, .side-card h5, .result-card h5 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+    .lane p, .side-card p, .result-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .dropzone, .workspace, .catalog, .query-panel, .result-list, .preview-box {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.95);
+      margin-top: 14px;
+      padding: 16px;
+    }
+    .dropzone {
+      min-height: 260px;
+      border-style: dashed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(248,251,255,0.95), rgba(242,247,252,0.95));
+      color: #667c91;
+    }
+    .dropzone b {
+      display: block;
+      color: #24384a;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .button {
+      padding: 11px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      color: #486177;
+    }
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .mini-card, .list-row {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.95);
+    }
+    .mini-card {
+      padding: 14px;
+    }
+    .list-row {
+      padding: 13px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: #54697c;
+    }
+    .catalog-item {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.95);
+      margin-bottom: 10px;
+    }
+    .catalog-item.active {
+      background: rgba(37,99,235,0.1);
+      border-color: rgba(37,99,235,0.22);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .field, .textarea {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(245,248,251,0.9);
+      padding: 14px;
+      color: #7d90a1;
+    }
+    .field { min-height: 52px; }
+    .textarea {
+      grid-column: 1 / -1;
+      min-height: 138px;
+    }
+    .preview-box {
+      min-height: 190px;
+      background:
+        radial-gradient(circle at top right, rgba(37,99,235,0.1), transparent 28%),
+        linear-gradient(90deg, rgba(90,124,160,0.08) 1px, transparent 1px),
+        linear-gradient(rgba(90,124,160,0.08) 1px, transparent 1px),
+        #fff;
+      background-size: auto, 24px 24px, 24px 24px, auto;
+    }
+    .result-card {
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .result-card h6 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(37,99,235,0.1);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    ul { margin: 8px 0 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>B 方案 · 流程编排台</h1>
+      <p>把页面理解为“阶段推进界面”，顶部统一展示流程步骤，中下部承接当前阶段的操作、反馈和下一步动作。</p>
+    </div>
+    <div>
+      <div class="chips">
+        <a class="chip" href="/files/option-a-full.html">A 中枢控制台</a>
+        <a class="chip active" href="/files/option-b-full.html">B 流程编排台</a>
+        <a class="chip" href="/files/option-c-full.html">C 高密度分析屏</a>
+      </div>
+      <p style="text-align:right;margin-top:8px;">更强调流程引导和任务推进感。</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="intro">
+      <div class="hero">
+        <h2>更像“阶段推进仪表台”</h2>
+        <p>这个方案的核心不是稳定三栏，而是让用户在每个页面里都感受到当前所处步骤、下一步操作和结果反馈，适合把复杂流程拆成可理解的阶段。</p>
+        <div class="flow-tags">
+          <span>进入任务</span>
+          <span>执行阶段</span>
+          <span>复核结果</span>
+          <span>输出结论</span>
+        </div>
+      </div>
+      <div class="summary">
+        <div style="font-size:12px;letter-spacing:.14em;color:#718598;text-transform:uppercase;font-weight:700;margin-bottom:10px;">适配判断</div>
+        <ul>
+          <li>识别工作台非常适合这种流程化表达。</li>
+          <li>知识库管理会从“目录维护”变成“筛选 → 编辑 → 校验 → 发布”的工作流。</li>
+          <li>图纸检索会更像“检索任务”，而不是长期驻留的分析台。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Workbench</p>
+          <h3>识别工作台</h3>
+          <p>把识别过程拆成“导入图纸、配置识别、运行任务、确认结果”四步，适合让用户理解当前进度与下一动作。</p>
+        </div>
+        <div class="stat-row">
+          <span class="stat">步骤 2 / 4</span>
+          <span class="stat">当前阶段: 配置识别</span>
+          <span class="stat">任务完成率 63%</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="board">
+          <div class="top-strip">
+            <div>
+              <div class="title">流程总览</div>
+              <h4>识别任务编排</h4>
+            </div>
+            <div class="toolbar">
+              <div class="button">返回任务列表</div>
+              <div class="button primary">继续下一步</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="stage-card"><span>STEP 1</span><b>导入图纸</b></div>
+            <div class="stage-card active"><span>STEP 2</span><b>配置识别</b></div>
+            <div class="stage-card"><span>STEP 3</span><b>运行任务</b></div>
+            <div class="stage-card"><span>STEP 4</span><b>确认结果</b></div>
+          </div>
+          <div class="main">
+            <section class="lane">
+              <div class="label">当前阶段工作区</div>
+              <h5>设置识别输入与参数</h5>
+              <p>把当前阶段的主要操作集中在中间区域，让用户对“此刻需要做什么”有非常明确的认知。</p>
+              <div class="dropzone">
+                <div>
+                  <b>拖拽图纸文件</b>
+                  <div>系统会自动识别页数、清晰度和图框质量</div>
+                </div>
+              </div>
+              <div class="split">
+                <div class="mini-card">
+                  <div class="label">参数区</div>
+                  <div class="list-row"><span>识别模板</span><b>标准电气图</b></div>
+                  <div class="list-row"><span>渲染 DPI</span><b>220</b></div>
+                </div>
+                <div class="mini-card">
+                  <div class="label">阶段提示</div>
+                  <div class="list-row"><span>可导入格式</span><b>PDF / PNG</b></div>
+                  <div class="list-row"><span>建议批量</span><b>10 份以内</b></div>
+                </div>
+              </div>
+            </section>
+            <aside>
+              <section class="side-card" style="padding:16px;">
+                <div class="label">上下文</div>
+                <h5>任务摘要</h5>
+                <div class="list-row"><span>批次编号</span><b>ER-0625-02</b></div>
+                <div class="list-row"><span>已导入</span><b>8 份图纸</b></div>
+                <div class="list-row"><span>异常页</span><b>2 页</b></div>
+              </section>
+              <section class="side-card" style="padding:16px;margin-top:12px;">
+                <div class="label">运行反馈</div>
+                <h5>建议动作</h5>
+                <p>在此显示参数异常、图像质量提醒和下一步提示。</p>
+                <div class="toolbar">
+                  <div class="button primary">应用推荐参数</div>
+                  <div class="button">跳过异常页</div>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Knowledge</p>
+          <h3>知识库管理</h3>
+          <p>不是传统后台式“左目录右表单”，而是把知识维护拆成“筛选对象、编辑规则、校验效果、确认发布”的阶段工作流。</p>
+        </div>
+        <div class="stat-row">
+          <span class="stat">步骤 3 / 4</span>
+          <span class="stat">校验通过率 94%</span>
+          <span class="stat">待发布 5 项</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="board">
+          <div class="top-strip">
+            <div>
+              <div class="title">知识维护流程</div>
+              <h4>从选择对象到发布生效</h4>
+            </div>
+            <div class="toolbar">
+              <div class="button">保存草稿</div>
+              <div class="button primary">发布更新</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="stage-card"><span>STEP 1</span><b>筛选对象</b></div>
+            <div class="stage-card"><span>STEP 2</span><b>编辑字段</b></div>
+            <div class="stage-card active"><span>STEP 3</span><b>校验规则</b></div>
+            <div class="stage-card"><span>STEP 4</span><b>确认发布</b></div>
+          </div>
+          <div class="main">
+            <section class="lane">
+              <div class="label">当前阶段工作区</div>
+              <h5>校验规则与素材关联</h5>
+              <p>重点强调“当前阶段的工作目标”，让知识维护过程更像一个明确的编辑流，而不是散开的表单集合。</p>
+              <div class="catalog">
+                <div class="catalog-item active"><b>KM 接触器</b><div style="color:#6d8093;margin-top:6px;">已进入校验阶段 / 8 个别名 / 4 个变体图</div></div>
+                <div class="catalog-item"><b>电机启动保护组合</b><div style="color:#6d8093;margin-top:6px;">等待试运行 / confidence 0.95</div></div>
+              </div>
+              <div class="form-grid">
+                <div class="field">规则名称 / 对象标签</div>
+                <div class="field">匹配范围 / 置信阈值</div>
+                <div class="textarea">规则说明、匹配条件、排除条件、成员描述、调试备注……</div>
+              </div>
+            </section>
+            <aside>
+              <section class="side-card" style="padding:16px;">
+                <div class="label">校验结果</div>
+                <h5>规则试运行</h5>
+                <div class="list-row"><span>成员数</span><b>4</b></div>
+                <div class="list-row"><span>命中样本</span><b>23</b></div>
+                <div class="list-row"><span>异常样本</span><b>2</b></div>
+              </section>
+              <section class="side-card" style="padding:16px;margin-top:12px;">
+                <div class="label">素材预览</div>
+                <div class="preview-box"></div>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h3>图纸检索</h3>
+          <p>检索流程被拆成“输入问题、收窄条件、查看命中、进入详情”，对新用户很友好，但分析型用户会觉得相对不够紧凑。</p>
+        </div>
+        <div class="stat-row">
+          <span class="stat">步骤 2 / 4</span>
+          <span class="stat">候选结果 126</span>
+          <span class="stat">建议继续收窄</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="board">
+          <div class="top-strip">
+            <div>
+              <div class="title">检索流程</div>
+              <h4>分阶段收敛搜索结果</h4>
+            </div>
+            <div class="toolbar">
+              <div class="button">保存查询</div>
+              <div class="button primary">进入详情比对</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="stage-card"><span>STEP 1</span><b>输入问题</b></div>
+            <div class="stage-card active"><span>STEP 2</span><b>收窄条件</b></div>
+            <div class="stage-card"><span>STEP 3</span><b>查看命中</b></div>
+            <div class="stage-card"><span>STEP 4</span><b>进入详情</b></div>
+          </div>
+          <div class="main">
+            <section class="lane">
+              <div class="label">当前阶段工作区</div>
+              <h5>设置查询和过滤范围</h5>
+              <p>搜索框和条件都视为“本阶段输入”，结果列表在下一阶段进一步展开。</p>
+              <div class="query-panel">
+                <div class="field">查找：电机启动保护回路 / 接触器自锁 / 指示灯控制</div>
+                <div class="form-grid">
+                  <div class="field">项目名称过滤</div>
+                  <div class="field">版本 / 修订号</div>
+                  <div class="field">检索模式</div>
+                  <div class="field">是否开启 Debug</div>
+                </div>
+                <div class="toolbar">
+                  <div class="button primary">运行检索</div>
+                  <div class="button">加载示例查询</div>
+                  <div class="button">清空过滤</div>
+                </div>
+              </div>
+              <div class="result-list">
+                <div class="label">下一阶段预览</div>
+                <div class="list-row"><span>候选图纸</span><b>126</b></div>
+                <div class="list-row"><span>高相关结果</span><b>17</b></div>
+              </div>
+            </section>
+            <aside>
+              <section class="side-card" style="padding:16px;">
+                <div class="label">服务状态</div>
+                <h5>检索健康</h5>
+                <div class="list-row"><span>BM25</span><b style="color:var(--green);">在线</b></div>
+                <div class="list-row"><span>Vector</span><b style="color:var(--green);">在线</b></div>
+                <div class="list-row"><span>Fusion</span><b style="color:var(--green);">在线</b></div>
+              </section>
+              <section class="side-card" style="padding:16px;margin-top:12px;">
+                <div class="label">结果示意</div>
+                <div class="result-card">
+                  <h6>线路图 03</h6>
+                  <p>命中热继电器 + 接触器 + 停止按钮组合。</p>
+                  <div class="badge-row">
+                    <span class="badge">0.92</span>
+                    <span class="badge">hybrid</span>
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

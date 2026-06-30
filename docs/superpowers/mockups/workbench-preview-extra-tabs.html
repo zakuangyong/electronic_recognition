@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>识别工作台 · 图纸预览新增页签（草图）</title>
+    <style>
+      :root {
+        --ink: #0f172a;
+        --muted: #5b6b7e;
+        --line: rgba(219, 227, 236, 0.92);
+        --surface: #ffffff;
+        --surface-2: rgba(248, 250, 252, 0.88);
+        --shadow: 0 18px 45px rgba(16, 24, 40, 0.08);
+        --accent: #2563eb;
+        --accent-soft: rgba(37, 99, 235, 0.12);
+        --good: #0f766e;
+        --warn: #d97706;
+        --danger: #b42318;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.08), transparent 40%),
+          radial-gradient(circle at 90% 20%, rgba(15, 118, 110, 0.08), transparent 42%),
+          linear-gradient(180deg, #f2f5f8, #eef2f6);
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      .wrap {
+        width: min(1540px, calc(100vw - 24px));
+        margin: 18px auto 40px;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        padding: 12px 18px;
+        border: 1px solid rgba(96, 119, 144, 0.28);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(33, 46, 63, 0.98), rgba(24, 35, 49, 0.96));
+        box-shadow: 0 18px 50px rgba(16, 24, 40, 0.18);
+        color: rgba(245, 249, 255, 0.95);
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: 0.02em;
+      }
+
+      .topbar p {
+        margin: 4px 0 0;
+        color: rgba(212, 222, 232, 0.82);
+        font-size: 12px;
+      }
+
+      .screen {
+        margin-top: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(216, 224, 232, 0.96);
+        border-radius: 24px;
+        background: rgba(248, 250, 252, 0.84);
+        box-shadow: var(--shadow);
+      }
+
+      .screen-header {
+        padding: 12px 18px 10px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 248, 251, 0.92));
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .meta span {
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: #526b82;
+        background: rgba(255, 255, 255, 0.96);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .canvas {
+        padding: 12px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+      }
+
+      .panel-title {
+        padding: 10px 12px 8px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 251, 253, 0.96));
+      }
+
+      .panel-title b {
+        font-size: 13px;
+        line-height: 1.2;
+        letter-spacing: 0.02em;
+      }
+
+      .label {
+        color: #778a9d;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .tab-bar {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: rgba(250, 252, 254, 0.72);
+      }
+
+      .tab {
+        padding: 7px 12px;
+        border: 1px solid rgba(210, 220, 232, 0.92);
+        border-radius: 999px;
+        background: #fff;
+        color: #5f7286;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+      }
+
+      .tab:hover {
+        transform: translateY(-1px);
+        border-color: rgba(37, 99, 235, 0.35);
+        background: rgba(37, 99, 235, 0.06);
+      }
+
+      .tab[aria-selected="true"] {
+        border-color: rgba(37, 99, 235, 0.5);
+        color: #143a7a;
+        background: rgba(37, 99, 235, 0.12);
+      }
+
+      .tab-content {
+        padding: 12px;
+        min-height: 520px;
+      }
+
+      .hint {
+        margin: 0 0 12px;
+        padding: 10px 11px;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        border-radius: 14px;
+        background: radial-gradient(circle at 16% 18%, rgba(37, 99, 235, 0.12), transparent 55%),
+          rgba(37, 99, 235, 0.04);
+        color: #2a4a7c;
+        font-size: 12px;
+      }
+
+      .hint strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 900;
+      }
+
+      .hint code {
+        padding: 1px 6px;
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.06);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+        gap: 10px;
+        align-items: start;
+      }
+
+      .card {
+        padding: 10px 11px;
+        border: 1px solid rgba(216, 224, 232, 0.9);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 13px;
+        letter-spacing: 0.01em;
+      }
+
+      .card p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .kv {
+        margin-top: 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .kv-row {
+        padding: 9px 10px;
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 10px;
+        border: 1px solid rgba(216, 224, 232, 0.88);
+        border-radius: 12px;
+        background: rgba(248, 250, 252, 0.92);
+      }
+
+      .kv-row dt {
+        color: #5f7286;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .kv-row dd {
+        margin: 0;
+        font-weight: 700;
+        color: #192336;
+        overflow-wrap: anywhere;
+      }
+
+      .pill-row {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        padding: 6px 10px;
+        border: 1px solid rgba(216, 224, 232, 0.92);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        font-size: 11px;
+        font-weight: 800;
+        color: #445a70;
+      }
+
+      .pill.good {
+        border-color: rgba(15, 118, 110, 0.25);
+        background: rgba(15, 118, 110, 0.08);
+        color: #0b4f4a;
+      }
+
+      .pill.warn {
+        border-color: rgba(217, 119, 6, 0.25);
+        background: rgba(217, 119, 6, 0.08);
+        color: #7a3b06;
+      }
+
+      .table-shell {
+        border: 1px solid rgba(216, 224, 232, 0.92);
+        border-radius: 14px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .table-tools {
+        padding: 10px 10px 9px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: rgba(248, 250, 252, 0.92);
+      }
+
+      .input {
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid rgba(210, 220, 232, 0.9);
+        border-radius: 10px;
+        background: #fff;
+        font: 12px/1.1 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+        color: #1f2a3a;
+        min-width: 220px;
+      }
+
+      .btn {
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid rgba(210, 220, 232, 0.92);
+        border-radius: 10px;
+        background: #fff;
+        color: #38506a;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        border-color: rgba(37, 99, 235, 0.35);
+        background: rgba(37, 99, 235, 0.12);
+        color: #143a7a;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      thead th {
+        text-align: left;
+        padding: 10px 11px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        color: #4a6076;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      tbody td {
+        padding: 9px 11px;
+        border-bottom: 1px solid rgba(230, 236, 242, 0.92);
+        color: #1f2a3a;
+      }
+
+      tbody tr:hover td {
+        background: rgba(37, 99, 235, 0.04);
+      }
+
+      tbody td.mono {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: #2b3c55;
+      }
+
+      .empty {
+        min-height: 320px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: #5b6b7e;
+      }
+
+      .empty b {
+        display: block;
+        font-size: 13px;
+        color: #1f2a3a;
+      }
+
+      .empty p {
+        margin: 8px 0 0;
+        font-size: 12px;
+        max-width: 520px;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="topbar">
+        <h1>识别工作台 · 图纸预览新增页签（草图交互）</h1>
+        <p>目标：在现有“元件 / 组合 / 预览”基础上新增「图纸标签表 / 控制-信号信息 / 图签信息」。此草图仅验证信息结构与密度。</p>
+      </header>
+
+      <section class="screen">
+        <div class="screen-header">
+          <div class="meta">
+            <span>结果 demo-result</span>
+            <span>处理中</span>
+            <span>预览 3 页</span>
+          </div>
+        </div>
+
+        <div class="canvas">
+          <section class="panel">
+            <div class="panel-title">
+              <b>图纸预览</b>
+              <span class="label">main canvas</span>
+            </div>
+
+            <div class="tab-bar" role="tablist" aria-label="图纸预览页签">
+              <button class="tab" role="tab" aria-selected="true" data-tab="components">元件 (30)</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="combinations">组合 (0)</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="preview">预览 (3)</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="tag-table">图纸标签表</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="control-signal">控制/信号信息</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="title-block">图签信息</button>
+            </div>
+
+            <div class="tab-content" id="tabContent">
+              <div class="hint">
+                <strong>可交互草图</strong>
+                <span>点击页签切换不同信息结构；右侧按钮可切换「模拟无数据」。</span>
+              </div>
+
+              <div class="grid">
+                <div class="card" id="contentMain">
+                  <h3>元件</h3>
+                  <p>保持现有列表形态，不在草图阶段重复实现。</p>
+                  <div class="pill-row">
+                    <span class="pill good">显示：现有 tab</span>
+                    <span class="pill">新增页签：3 个</span>
+                    <span class="pill warn">仅占位</span>
+                  </div>
+                  <div class="empty" style="margin-top: 12px">
+                    <div>
+                      <b>元件页签占位</b>
+                      <p>下一步落地会复用现有组件列表，不改变当前的主画布密度。</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" id="contentSide">
+                  <h3>草图控制</h3>
+                  <p>用于模拟后端字段缺失/为空时的 UI 表现。</p>
+                  <div class="pill-row">
+                    <button class="btn primary" id="toggleEmpty" type="button">模拟无数据：关</button>
+                    <button class="btn" id="copyJson" type="button">复制示例 JSON</button>
+                  </div>
+                  <dl class="kv">
+                    <div class="kv-row">
+                      <dt>当前页签</dt>
+                      <dd id="activeTabLabel">元件</dd>
+                    </div>
+                    <div class="kv-row">
+                      <dt>数据来源</dt>
+                      <dd class="mono" id="activeSource">result.detected_components</dd>
+                    </div>
+                    <div class="kv-row">
+                      <dt>渲染策略</dt>
+                      <dd id="activeStrategy">列表 / 表格 / 关键信息卡</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const state = {
+        activeTab: "components",
+        empty: false,
+      };
+
+      const sample = {
+        tag_table: [
+          { tag: "电气", value: "风机控制图", source: "ocr", confidence: 0.93 },
+          { tag: "回路", value: "KM1-FU1", source: "rule", confidence: 0.87 },
+          { tag: "设备位号", value: "A17387_1706", source: "regex", confidence: 0.91 },
+          { tag: "项目", value: "Project", source: "meta", confidence: 0.72 },
+          { tag: "版本", value: "B", source: "title_block", confidence: 0.66 },
+        ],
+        control_signal_configuration: {
+          mode: "hybrid",
+          signals: [
+            { name: "KM1", kind: "coil", page: 1, note: "主接触器线圈" },
+            { name: "FU1", kind: "fuse", page: 1, note: "熔断器" },
+            { name: "S1", kind: "switch", page: 2, note: "启动按钮" },
+          ],
+          controls: [
+            { name: "FAN_START", type: "command", targets: ["KM1"], confidence: 0.88 },
+            { name: "FAN_STOP", type: "command", targets: ["KM1"], confidence: 0.82 },
+          ],
+        },
+        title_block: {
+          drawing_number: "A17387_1706",
+          drawing_title: "风机控制图",
+          revision: "B",
+          project_name: "Project",
+          system_name: "System",
+          created_at: "2026-06-25 10:10",
+        },
+      };
+
+      function setTab(tabKey) {
+        state.activeTab = tabKey;
+        const tabs = document.querySelectorAll(".tab");
+        tabs.forEach((btn) => {
+          const active = btn.dataset.tab === tabKey;
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        render();
+      }
+
+      function percent(v) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "--";
+        return `${Math.round(n * 100)}%`;
+      }
+
+      function tableTagRows() {
+        const rows = state.empty ? [] : sample.tag_table;
+        if (!rows.length) {
+          return `
+            <div class="empty">
+              <div>
+                <b>暂无图纸标签</b>
+                <p>后端未返回标签表时，建议显示空态并提示“可继续识别或稍后刷新”。</p>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="table-shell">
+            <div class="table-tools">
+              <input class="input" id="tagFilter" type="search" placeholder="筛选：标签名 / 值 / 来源" />
+              <button class="btn" id="resetFilter" type="button">清空筛选</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 160px">标签</th>
+                  <th>值</th>
+                  <th style="width: 120px">来源</th>
+                  <th style="width: 120px">置信度</th>
+                </tr>
+              </thead>
+              <tbody id="tagBody">
+                ${rows
+                  .map(
+                    (r) => `
+                  <tr>
+                    <td><b>${r.tag}</b></td>
+                    <td class="mono">${String(r.value || "--")}</td>
+                    <td>${r.source}</td>
+                    <td>${percent(r.confidence)}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function controlSignal() {
+        const payload = state.empty ? null : sample.control_signal_configuration;
+        if (!payload) {
+          return `
+            <div class="empty">
+              <div>
+                <b>暂无控制/信号信息</b>
+                <p>当配置结果为空时，建议用结构化空态说明“该结果仅完成元件层识别”。</p>
+              </div>
+            </div>
+          `;
+        }
+        const signals = payload.signals || [];
+        const controls = payload.controls || [];
+        return `
+          <div class="grid" style="grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)">
+            <div class="table-shell">
+              <div class="table-tools">
+                <b style="font-size:12px;letter-spacing:.06em">信号列表</b>
+                <span class="pill">${signals.length} 条</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 120px">名称</th>
+                    <th style="width: 120px">类型</th>
+                    <th style="width: 90px">页</th>
+                    <th>备注</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${signals
+                    .map(
+                      (s) => `
+                    <tr>
+                      <td class="mono"><b>${s.name}</b></td>
+                      <td>${s.kind}</td>
+                      <td>第 ${s.page} 页</td>
+                      <td>${s.note || "--"}</td>
+                    </tr>
+                  `,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <div class="table-tools">
+                <b style="font-size:12px;letter-spacing:.06em">控制配置</b>
+                <span class="pill">${controls.length} 条</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 160px">控制</th>
+                    <th style="width: 120px">类型</th>
+                    <th>目标</th>
+                    <th style="width: 120px">置信度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${controls
+                    .map(
+                      (c) => `
+                    <tr>
+                      <td class="mono"><b>${c.name}</b></td>
+                      <td>${c.type}</td>
+                      <td class="mono">${(c.targets || []).join(", ") || "--"}</td>
+                      <td>${percent(c.confidence)}</td>
+                    </tr>
+                  `,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      function titleBlock() {
+        const tb = state.empty ? null : sample.title_block;
+        if (!tb) {
+          return `
+            <div class="empty">
+              <div>
+                <b>未解析到图签信息</b>
+                <p>当 title_block 缺失或结构不完整时，建议展示可解释空态，避免误以为识别失败。</p>
+              </div>
+            </div>
+          `;
+        }
+        const entries = [
+          ["图号", tb.drawing_number],
+          ["图名", tb.drawing_title],
+          ["版本", tb.revision],
+          ["项目", tb.project_name],
+          ["系统", tb.system_name],
+          ["时间", tb.created_at],
+        ];
+        return `
+          <div class="grid">
+            <div class="card">
+              <h3>图签信息（结构化）</h3>
+              <p>优先展示对“检索 / 版本对比 / 复核”最关键的字段，剩余字段可折叠到 JSON。</p>
+              <dl class="kv">
+                ${entries
+                  .map(
+                    ([k, v]) => `
+                    <div class="kv-row">
+                      <dt>${k}</dt>
+                      <dd>${String(v || "--")}</dd>
+                    </div>
+                  `,
+                  )
+                  .join("")}
+              </dl>
+              <div class="pill-row">
+                <span class="pill good">可直接复制图号</span>
+                <span class="pill">可作为检索条件</span>
+                <span class="pill warn">字段可扩展</span>
+              </div>
+            </div>
+            <div class="card">
+              <h3>落地建议</h3>
+              <p>这三个新增页签默认不参与轮询加载，只使用后端结果字段；如果字段为空，展示空态，不影响主识别体验。</p>
+              <div class="kv">
+                <div class="kv-row">
+                  <dt>标签表</dt>
+                  <dd>表格 + 筛选</dd>
+                </div>
+                <div class="kv-row">
+                  <dt>控制/信号</dt>
+                  <dd>双表并排，关注“名称/类型/页/目标”</dd>
+                </div>
+                <div class="kv-row">
+                  <dt>图签</dt>
+                  <dd>结构化字段 + JSON 复制</dd>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function setSide(tab) {
+        const map = {
+          components: {
+            label: "元件",
+            source: "result.detected_components",
+            strategy: "列表",
+          },
+          combinations: {
+            label: "组合",
+            source: "result.detected_combinations",
+            strategy: "列表",
+          },
+          preview: {
+            label: "预览",
+            source: "result.preview_pages",
+            strategy: "画布预览",
+          },
+          "tag-table": {
+            label: "图纸标签表",
+            source: "result.component_table / result.tags (待确认字段名)",
+            strategy: "表格 + 筛选",
+          },
+          "control-signal": {
+            label: "控制/信号信息",
+            source: "result.control_signal_configuration",
+            strategy: "结构化双表",
+          },
+          "title-block": {
+            label: "图签信息",
+            source: "result.title_block",
+            strategy: "关键字段卡 + JSON",
+          },
+        };
+        const current = map[tab] || map.components;
+        document.getElementById("activeTabLabel").textContent = current.label;
+        document.getElementById("activeSource").textContent = current.source;
+        document.getElementById("activeStrategy").textContent = current.strategy;
+      }
+
+      function render() {
+        setSide(state.activeTab);
+        const main = document.getElementById("contentMain");
+        if (state.activeTab === "tag-table") {
+          main.innerHTML = `
+            <h3>图纸标签表</h3>
+            <p>用于承接后端提取的“图纸标签表”，建议按“标签/值/来源/置信度”组织。</p>
+            ${tableTagRows()}
+          `;
+          bindTagFilter();
+          return;
+        }
+        if (state.activeTab === "control-signal") {
+          main.innerHTML = `
+            <h3>控制 / 信号信息</h3>
+            <p>用于承接“控制与信号配置”提取结果：左侧信号、右侧控制映射，便于快速核对。</p>
+            ${controlSignal()}
+          `;
+          return;
+        }
+        if (state.activeTab === "title-block") {
+          main.innerHTML = titleBlock();
+          return;
+        }
+        if (state.activeTab === "preview") {
+          main.innerHTML = `
+            <h3>预览</h3>
+            <p>保持现有画布预览，不在草图阶段重复实现。新增页签不会影响预览体验。</p>
+            <div class="empty" style="margin-top: 12px">
+              <div>
+                <b>预览页签占位</b>
+                <p>落地阶段继续使用现有 DrawingPreview，并在必要时支持“图签/标签”反向定位。</p>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        if (state.activeTab === "combinations") {
+          main.innerHTML = `
+            <h3>组合</h3>
+            <p>保持现有组合列表，不在草图阶段重复实现。</p>
+            <div class="empty" style="margin-top: 12px">
+              <div>
+                <b>组合页签占位</b>
+                <p>后端若未返回组合，则保持空态。</p>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        main.innerHTML = `
+          <h3>元件</h3>
+          <p>保持现有列表形态，不在草图阶段重复实现。</p>
+          <div class="empty" style="margin-top: 12px">
+            <div>
+              <b>元件页签占位</b>
+              <p>新增页签的视觉密度会对齐此处的“紧凑卡片/表格”风格。</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function bindTagFilter() {
+        const input = document.getElementById("tagFilter");
+        const reset = document.getElementById("resetFilter");
+        const body = document.getElementById("tagBody");
+        if (!input || !reset || !body) return;
+
+        function apply() {
+          const q = String(input.value || "").trim().toLowerCase();
+          const rows = Array.from(body.querySelectorAll("tr"));
+          rows.forEach((tr) => {
+            const text = tr.textContent.toLowerCase();
+            tr.style.display = q && !text.includes(q) ? "none" : "";
+          });
+        }
+
+        input.addEventListener("input", apply);
+        reset.addEventListener("click", () => {
+          input.value = "";
+          apply();
+          input.focus();
+        });
+      }
+
+      document.querySelectorAll(".tab").forEach((btn) => {
+        btn.addEventListener("click", () => setTab(btn.dataset.tab));
+      });
+
+      document.getElementById("toggleEmpty").addEventListener("click", () => {
+        state.empty = !state.empty;
+        document.getElementById("toggleEmpty").textContent = `模拟无数据：${state.empty ? "开" : "关"}`;
+        render();
+      });
+
+      document.getElementById("copyJson").addEventListener("click", async () => {
+        const keyMap = {
+          "tag-table": "tag_table",
+          "control-signal": "control_signal_configuration",
+          "title-block": "title_block",
+        };
+        const key = keyMap[state.activeTab] || "title_block";
+        const text = JSON.stringify(state.empty ? {} : sample[key], null, 2);
+        try {
+          await navigator.clipboard.writeText(text);
+          const btn = document.getElementById("copyJson");
+          const old = btn.textContent;
+          btn.textContent = "已复制";
+          setTimeout(() => (btn.textContent = old), 900);
+        } catch {
+          alert(text);
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>

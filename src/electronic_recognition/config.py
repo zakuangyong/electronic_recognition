@@ -49,13 +49,14 @@ class Settings:
     search_embedding_normalize: bool = True
     search_bm25_limit: int = 50
     search_vector_limit: int = 50
+    search_vector_min_score: float = 0.55
     search_rrf_k: int = 60
     search_result_limit: int = 20
     search_auto_index: bool = True
     search_deduplicate: bool = True
     search_exact_boost_config: str = "data/index/search_weights.json"
     search_synonyms_config: str = "data/index/search_synonyms.json"
-    search_mode: str = "hybrid"
+    search_mode: str = "bm25"
 
     @classmethod
     def from_env(
@@ -210,6 +211,13 @@ class Settings:
             search_vector_limit=max(
                 1, int(os.getenv("ER_SEARCH_VECTOR_LIMIT", "50"))
             ),
+            search_vector_min_score=max(
+                0.0,
+                min(
+                    1.0,
+                    float(os.getenv("ER_SEARCH_VECTOR_MIN_SCORE", "0.55")),
+                ),
+            ),
             search_rrf_k=max(
                 1, int(os.getenv("ER_SEARCH_RRF_K", "60"))
             ),
@@ -226,7 +234,7 @@ class Settings:
                 "ER_SEARCH_SYNONYMS_CONFIG",
                 "data/index/search_synonyms.json",
             ),
-            search_mode=_search_mode(os.getenv("ER_SEARCH_MODE", "hybrid")),
+            search_mode=_search_mode(os.getenv("ER_SEARCH_MODE", "bm25")),
         )
 
 

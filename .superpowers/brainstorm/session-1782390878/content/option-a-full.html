@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A 方案 - 中枢控制台</title>
+  <style>
+    :root {
+      --bg: #edf2f6;
+      --panel: rgba(255, 255, 255, 0.84);
+      --panel-strong: #ffffff;
+      --line: #d5dee7;
+      --line-strong: #bcc9d6;
+      --text: #213547;
+      --muted: #61758a;
+      --accent: #2f6fed;
+      --accent-soft: rgba(47, 111, 237, 0.12);
+      --shadow: 0 18px 40px rgba(28, 54, 88, 0.08);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.75)),
+        linear-gradient(90deg, rgba(42,85,132,0.04) 1px, transparent 1px),
+        linear-gradient(rgba(42,85,132,0.04) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 24px 24px, 24px 24px, auto;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      backdrop-filter: blur(18px);
+      background: rgba(237, 242, 246, 0.88);
+      border-bottom: 1px solid rgba(188, 201, 214, 0.8);
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .brand p, .switcher p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .switcher {
+      text-align: right;
+    }
+    .chips {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 118px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.76);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .wrap {
+      width: min(1480px, calc(100vw - 40px));
+      margin: 26px auto 50px;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .hero, .notes {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(188, 201, 214, 0.8);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+    }
+    .hero h2 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+    .hero p, .notes li {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .tag {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .screen {
+      background: rgba(248, 251, 253, 0.76);
+      border: 1px solid rgba(188, 201, 214, 0.8);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-top: 26px;
+    }
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 22px 26px 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(244,248,251,0.9));
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      color: #6d8398;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .screen-header h3 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .screen-header .desc {
+      margin: 0;
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.5;
+    }
+    .pill-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: #486178;
+      font-weight: 600;
+    }
+    .canvas {
+      padding: 22px;
+      min-height: 720px;
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr) 260px;
+      gap: 16px;
+      min-height: 670px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    }
+    .panel-strong {
+      background: var(--panel-strong);
+    }
+    .title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #71879d;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .nav-item, .metric, .list-row, .card, .preview {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.92);
+    }
+    .nav-item {
+      padding: 14px 14px;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #53697d;
+    }
+    .nav-item.active {
+      border-color: rgba(47,111,237,0.36);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .stack { display: grid; gap: 12px; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .metric {
+      padding: 14px;
+    }
+    .metric b {
+      display: block;
+      font-size: 25px;
+      margin-top: 8px;
+      color: #20364d;
+    }
+    .work-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+    .dropzone {
+      min-height: 240px;
+      border-radius: 22px;
+      border: 1.5px dashed #b6c6d6;
+      background: linear-gradient(180deg, rgba(248,251,255,0.94), rgba(240,246,251,0.94));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #61758a;
+      text-align: center;
+      gap: 10px;
+    }
+    .dropzone b {
+      font-size: 22px;
+      color: #27425d;
+    }
+    .button-row, .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .button {
+      padding: 11px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 13px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #456177;
+    }
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .preview {
+      min-height: 308px;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(245,249,252,0.9), rgba(255,255,255,0.96));
+    }
+    .preview-sheet {
+      height: 100%;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(47,111,237,0.10), transparent 32%),
+        linear-gradient(90deg, rgba(74,119,167,0.08) 1px, transparent 1px),
+        linear-gradient(rgba(74,119,167,0.08) 1px, transparent 1px),
+        #fff;
+      background-size: auto, 26px 26px, 26px 26px, auto;
+      border: 1px solid #d5e0ea;
+    }
+    .list-row {
+      padding: 13px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: #4f657a;
+    }
+    .list-row b {
+      color: #263b50;
+    }
+    .editor-layout, .search-layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 14px;
+      min-height: 590px;
+    }
+    .catalog-item {
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+    }
+    .catalog-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(47,111,237,0.36);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .field {
+      height: 52px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(245,248,251,0.9);
+      padding: 14px;
+      color: #7a8e9f;
+    }
+    .textarea {
+      grid-column: 1 / -1;
+      min-height: 130px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(245,248,251,0.9);
+      padding: 14px;
+      color: #7a8e9f;
+    }
+    .search-layout {
+      grid-template-columns: 320px minmax(0, 1fr) 260px;
+    }
+    .result-card {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.95);
+      margin-bottom: 12px;
+    }
+    .result-card h4 {
+      margin: 0 0 8px;
+      font-size: 19px;
+    }
+    .result-card p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(47,111,237,0.1);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <h1>A 方案 · 中枢控制台</h1>
+      <p>统一导航骨架，强调“操作在中间、状态在右侧、系统导航在左侧”的平台中枢感。</p>
+    </div>
+    <div class="switcher">
+      <div class="chips">
+        <a class="chip active" href="/files/option-a-full.html">A 中枢控制台</a>
+        <a class="chip" href="/files/option-b-full.html">B 流程编排台</a>
+        <a class="chip" href="/files/option-c-full.html">C 高密度分析屏</a>
+      </div>
+      <p>先看完整比例，再决定是否继续细化。</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="intro">
+      <div class="hero">
+        <h2>适合做产品基线的控制台骨架</h2>
+        <p>三个页面共用同一套平台壳层，能保留工程系统的专业感，也方便后续把现有 Vue 页面逐步替换成统一组件体系。这个方案最强调秩序、复用和长期演进。</p>
+        <div class="tags">
+          <span class="tag">统一导航</span>
+          <span class="tag">状态右栏</span>
+          <span class="tag">主作业区优先</span>
+          <span class="tag">适合 Vue 落地</span>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="title">为什么适合当前项目</div>
+        <ul>
+          <li>识别工作台需要把上传、任务状态、结果预览分开处理。</li>
+          <li>知识库管理适合左侧目录、中部编辑、右侧辅助说明的三栏节奏。</li>
+          <li>图纸检索可以在不破坏主骨架的前提下，提高中间结果区密度。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Workbench</p>
+          <h3>识别工作台</h3>
+          <p class="desc">左栏保留全局导航，中间是上传与结果操作区，右侧固定任务状态与结果摘要。适合持续观察任务与结果。</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill">上传批次 12</span>
+          <span class="pill">队列运行中</span>
+          <span class="pill">成功率 96.4%</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="shell">
+          <aside class="panel">
+            <div class="title">平台导航</div>
+            <div class="nav-item active">识别工作台</div>
+            <div class="nav-item">知识库管理</div>
+            <div class="nav-item">图纸检索</div>
+            <div class="nav-item">任务历史</div>
+            <div class="nav-item">系统配置</div>
+          </aside>
+          <main class="stack">
+            <div class="metrics">
+              <div class="metric"><span>今日任务</span><b>48</b></div>
+              <div class="metric"><span>处理中</span><b>06</b></div>
+              <div class="metric"><span>已完成</span><b>39</b></div>
+              <div class="metric"><span>异常</span><b>03</b></div>
+            </div>
+            <div class="work-main">
+              <section class="panel panel-strong">
+                <div class="title">上传与任务入口</div>
+                <div class="dropzone">
+                  <b>拖拽图纸到此处</b>
+                  <div>支持 PDF / PNG / JPG，多文件批量导入</div>
+                  <div class="button-row">
+                    <div class="button primary">开始识别</div>
+                    <div class="button">选择文件</div>
+                    <div class="button">导入样例</div>
+                  </div>
+                </div>
+                <div class="toolbar" style="margin-top:12px;">
+                  <div class="button">识别模板</div>
+                  <div class="button">质量校验</div>
+                  <div class="button">结果导出</div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="title">当前批次结果概览</div>
+                <div class="list-row"><span>schematic-10.pdf</span><b>完成</b></div>
+                <div class="list-row"><span>schematic-11.pdf</span><b>处理中</b></div>
+                <div class="list-row"><span>control-panel-A3.png</span><b>排队中</b></div>
+                <div class="list-row"><span>motor-line-07.pdf</span><b>完成</b></div>
+                <div class="list-row"><span>transformer-bus.png</span><b>异常</b></div>
+              </section>
+            </div>
+            <div class="result-grid">
+              <section class="panel panel-strong">
+                <div class="title">图纸预览</div>
+                <div class="preview">
+                  <div class="preview-sheet"></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="title">识别明细</div>
+                <div class="list-row"><span>检测元件</span><b>168</b></div>
+                <div class="list-row"><span>组合规则</span><b>12</b></div>
+                <div class="list-row"><span>标题栏字段</span><b>9 / 10</b></div>
+                <div class="list-row"><span>推荐复核项</span><b>4</b></div>
+              </section>
+            </div>
+          </main>
+          <aside class="stack">
+            <section class="panel">
+              <div class="title">任务状态</div>
+              <div class="list-row"><span>结果 ID</span><b>ER-20260625-018</b></div>
+              <div class="list-row"><span>处理阶段</span><b>规则融合</b></div>
+              <div class="list-row"><span>更新时间</span><b>14:23:11</b></div>
+            </section>
+            <section class="panel">
+              <div class="title">质量提示</div>
+              <div class="list-row"><span>低清晰度页</span><b>2 页</b></div>
+              <div class="list-row"><span>图框偏移</span><b>1 页</b></div>
+            </section>
+            <section class="panel">
+              <div class="title">快捷动作</div>
+              <div class="button primary" style="width:100%;text-align:center;">打开结果页</div>
+              <div class="button" style="width:100%;text-align:center;margin-top:10px;">复核异常页</div>
+              <div class="button" style="width:100%;text-align:center;margin-top:10px;">下载报告</div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Knowledge</p>
+          <h3>知识库管理</h3>
+          <p class="desc">目录和筛选放左侧，中间做主编辑器，右侧承接统计、校验与图片素材，形成稳定的维护节奏。</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill">单元件 842</span>
+          <span class="pill">组合规则 96</span>
+          <span class="pill">最近更新 7 条</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="shell">
+          <aside class="panel">
+            <div class="title">平台导航</div>
+            <div class="nav-item">识别工作台</div>
+            <div class="nav-item active">知识库管理</div>
+            <div class="nav-item">图纸检索</div>
+            <div class="nav-item">规则校验</div>
+            <div class="nav-item">版本记录</div>
+          </aside>
+          <main class="editor-layout">
+            <section class="panel">
+              <div class="title">目录与筛选</div>
+              <div class="field">按 ID / 标签 / 型号搜索</div>
+              <div class="toolbar" style="margin:12px 0;">
+                <div class="button primary">新建单元件</div>
+                <div class="button">新建规则</div>
+              </div>
+              <div class="stack">
+                <div class="catalog-item active"><b>KM 接触器</b><div style="color:#6b8196;margin-top:6px;">单元件 / 已启用 / 8 个别名</div></div>
+                <div class="catalog-item"><b>QF 断路器</b><div style="color:#6b8196;margin-top:6px;">单元件 / 已启用 / 4 个变体</div></div>
+                <div class="catalog-item"><b>电机启动保护组合</b><div style="color:#6b8196;margin-top:6px;">规则 / same_page / 0.95</div></div>
+                <div class="catalog-item"><b>指示灯控制回路</b><div style="color:#6b8196;margin-top:6px;">规则 / cross_region / 0.91</div></div>
+              </div>
+            </section>
+            <section class="panel panel-strong">
+              <div class="title">对象编辑器</div>
+              <div class="toolbar">
+                <div class="button primary">保存</div>
+                <div class="button">校验</div>
+                <div class="button">试运行</div>
+                <div class="button">删除</div>
+              </div>
+              <div class="form-grid">
+                <div class="field">元件 ID</div>
+                <div class="field">显示名称</div>
+                <div class="field">元件类型</div>
+                <div class="field">型号 / 规格</div>
+                <div class="field">标准号</div>
+                <div class="field">别名数组</div>
+                <div class="textarea">定义说明、识别提示、注意事项、适用条件……</div>
+              </div>
+            </section>
+          </main>
+          <aside class="stack">
+            <section class="panel">
+              <div class="title">图片资源</div>
+              <div class="preview" style="min-height:180px;"><div class="preview-sheet"></div></div>
+            </section>
+            <section class="panel">
+              <div class="title">目录统计</div>
+              <div class="list-row"><span>启用单元件</span><b>810</b></div>
+              <div class="list-row"><span>启用规则</span><b>91</b></div>
+              <div class="list-row"><span>待补图样</span><b>17</b></div>
+            </section>
+            <section class="panel">
+              <div class="title">校验结果</div>
+              <div class="list-row"><span>规则成员数</span><b>4</b></div>
+              <div class="list-row"><span>置信阈值</span><b>0.95</b></div>
+              <div class="list-row"><span>试运行命中</span><b>23</b></div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h3>图纸检索</h3>
+          <p class="desc">保留统一控制台骨架，但把中间结果区尽量做宽；右侧作为命中详情和检索健康状态区。</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill">混合检索已启用</span>
+          <span class="pill">索引版本 r2026.06</span>
+          <span class="pill">服务在线</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="search-layout">
+          <aside class="panel">
+            <div class="title">查询控制区</div>
+            <div class="field">输入元件名称、回路、功能描述</div>
+            <div class="field" style="margin-top:12px;">项目名 / 图纸修订 / 页码过滤</div>
+            <div class="toolbar" style="margin:12px 0;">
+              <div class="button primary">开始检索</div>
+              <div class="button">重建索引</div>
+            </div>
+            <div class="stack">
+              <div class="catalog-item"><b>示例查询</b><div style="color:#6b8196;margin-top:6px;">电机启动保护、接触器自锁回路</div></div>
+              <div class="catalog-item"><b>检索模式</b><div style="color:#6b8196;margin-top:6px;">Hybrid / Exact / Debug</div></div>
+              <div class="catalog-item"><b>健康状态</b><div style="color:#6b8196;margin-top:6px;">BM25 / Vector / Fusion 正常</div></div>
+            </div>
+          </aside>
+          <main class="panel panel-strong">
+            <div class="title">结果主列表</div>
+            <div class="result-card">
+              <h4>线路图 03 · 电机启动保护回路</h4>
+              <p>命中“热继电器 + 接触器 + 停止按钮 + 指示灯”组合，功能描述匹配度高，包含相关页面预览与元件坐标。</p>
+              <div class="badge-row">
+                <span class="badge">score 0.92</span>
+                <span class="badge">hybrid</span>
+                <span class="badge">project A</span>
+              </div>
+            </div>
+            <div class="result-card">
+              <h4>配电柜图纸 B12 · 接触器自锁</h4>
+              <p>在控制回路页识别出按钮、线圈和辅助触点链路，文本召回与结构召回都有较高相关性。</p>
+              <div class="badge-row">
+                <span class="badge">score 0.88</span>
+                <span class="badge">vector + exact</span>
+                <span class="badge">revision 2</span>
+              </div>
+            </div>
+            <div class="result-card">
+              <h4>工位驱动图纸 C07 · 指示灯控制回路</h4>
+              <p>命中组合规则与别名扩展词，适合作为近似案例查看。</p>
+              <div class="badge-row">
+                <span class="badge">score 0.81</span>
+                <span class="badge">degraded fallback</span>
+              </div>
+            </div>
+          </main>
+          <aside class="stack">
+            <section class="panel">
+              <div class="title">命中详情</div>
+              <div class="preview" style="min-height:200px;"><div class="preview-sheet"></div></div>
+            </section>
+            <section class="panel">
+              <div class="title">摘要信息</div>
+              <div class="list-row"><span>总命中</span><b>126</b></div>
+              <div class="list-row"><span>首屏展示</span><b>20</b></div>
+              <div class="list-row"><span>降级原因</span><b>无</b></div>
+            </section>
+            <section class="panel">
+              <div class="title">调试视图</div>
+              <div class="list-row"><span>Query Parse</span><b>已解析</b></div>
+              <div class="list-row"><span>融合权重</span><b>0.65 / 0.35</b></div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<h2>三页静态原型方向对比</h2>
+<p class="subtitle">面向内部工程平台，整体采用浅色工程台气质。先选一条总方向，再继续细化到识别工作台、知识库管理、图纸检索三个页面。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. 中枢控制台</div>
+        <div class="mockup-body">
+          <div style="display:grid;grid-template-columns:180px 1fr 220px;gap:10px;min-height:220px;">
+            <div style="background:#eef3f8;border:1px solid #d4dde8;border-radius:12px;padding:10px;">
+              <div class="label">导航</div>
+              <div class="mock-sidebar" style="margin-top:8px;">工作台<br>知识库<br>图纸检索</div>
+            </div>
+            <div style="display:grid;grid-template-rows:54px 1fr 1fr;gap:10px;">
+              <div style="background:#f8fbfd;border:1px solid #d7e1ea;border-radius:12px;padding:10px;">任务头部 / 筛选栏 / 主操作区</div>
+              <div style="background:#ffffff;border:1px solid #d7e1ea;border-radius:12px;padding:10px;">主内容画布：上传、编辑、结果或检索列表</div>
+              <div style="background:#ffffff;border:1px solid #d7e1ea;border-radius:12px;padding:10px;">二级内容区：预览、规则详情、结果明细</div>
+            </div>
+            <div style="background:#f5f8fb;border:1px solid #d4dde8;border-radius:12px;padding:10px;">
+              <div class="label">状态侧栏</div>
+              <div style="margin-top:8px;background:#fff;border:1px solid #d7e1ea;border-radius:10px;padding:8px;">任务状态</div>
+              <div style="margin-top:8px;background:#fff;border:1px solid #d7e1ea;border-radius:10px;padding:8px;">指标摘要</div>
+              <div style="margin-top:8px;background:#fff;border:1px solid #d7e1ea;border-radius:10px;padding:8px;">快捷动作</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>中枢控制台</h3>
+      <p>推荐方案。三页共享统一骨架：左侧导航，中间主作业区，右侧状态与辅助信息。利于把“操作”和“反馈”拆开。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>结构统一，后续落 Vue 容易复用</li>
+            <li>适合识别任务、知识编辑、检索结果三种重交互页面</li>
+            <li>专业稳健，适合内部平台长期演进</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>注意点</h4>
+          <ul>
+            <li>需要用层次和留白避免显得过于“后台”</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. 流程编排台</div>
+        <div class="mockup-body">
+          <div style="display:grid;grid-template-rows:56px 80px 1fr;gap:10px;min-height:220px;">
+            <div style="background:#eef5fb;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">顶栏导航 + 全局状态</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <div style="background:#fff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">步骤 1</div>
+              <div style="background:#fff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">步骤 2</div>
+              <div style="background:#fff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">步骤 3</div>
+              <div style="background:#fff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">步骤 4</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;">
+              <div style="background:#ffffff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">当前阶段工作区</div>
+              <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
+                <div style="background:#ffffff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">上下文信息</div>
+                <div style="background:#ffffff;border:1px solid #d7e3ef;border-radius:12px;padding:10px;">运行反馈</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>流程编排台</h3>
+      <p>把三页都设计成“阶段推进”模式，强调从上传到识别、从筛选到编辑、从查询到比对的流程感。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>上手直观，适合强调操作闭环</li>
+            <li>很适合做步骤引导与新手教学</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>注意点</h4>
+          <ul>
+            <li>知识库和检索页会被“流程化”得略重</li>
+            <li>对高频用户来说切换成本更高</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 高密度分析屏</div>
+        <div class="mockup-body">
+          <div style="display:grid;grid-template-rows:50px 1fr;gap:10px;min-height:220px;">
+            <div style="background:#f2f6fa;border:1px solid #d7e0e9;border-radius:12px;padding:10px;">工具条 + 多维筛选 + 指标</div>
+            <div style="display:grid;grid-template-columns:220px 1fr 280px;gap:10px;">
+              <div style="background:#fff;border:1px solid #d7e0e9;border-radius:12px;padding:10px;">树 / Facet / 标签</div>
+              <div style="background:#fff;border:1px solid #d7e0e9;border-radius:12px;padding:10px;">主结果区 / 画布 / 表格</div>
+              <div style="background:#fff;border:1px solid #d7e0e9;border-radius:12px;padding:10px;">详情 / Debug / 比对</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>高密度分析屏</h3>
+      <p>强调“专业分析工具”气质，信息量更高，更像检索与规则分析系统，而不是传统后台。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>适合复杂检索、规则测试、结果比对</li>
+            <li>专业感强，容易做出行业工具特色</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>注意点</h4>
+          <ul>
+            <li>识别工作台第一页会显得较重</li>
+            <li>需要更强的信息层次设计，否则容易压迫</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p class="label">建议</p>
+  <p>建议优先选 <strong>A 中枢控制台</strong>，再在图纸检索页局部吸收 C 的高密度分析能力。</p>
+</div>

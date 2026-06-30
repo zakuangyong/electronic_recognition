@@ -41,6 +41,7 @@ def test_search_collapses_history_versions_by_source_hash(tmp_path: Path) -> Non
     assert len(payload["items"]) == 1
     assert payload["items"][0]["result_id"] == "result-new"
     assert payload["items"][0]["collapsed_versions"] == 1
+    assert payload["items"][0]["preview_url"] == "/api/results/result-new/preview-file#page-1"
     assert payload["items"][0]["history_versions"] == [
         {"result_id": "result-old"}
     ]

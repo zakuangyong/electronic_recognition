@@ -1,0 +1,12 @@
+{
+  "source": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\68e25b19ac20405a93cac559f937e306\\input\\FRONT_KNL_zarz.CATDrawing",
+  "output": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\68e25b19ac20405a93cac559f937e306\\input\\old.pdf",
+  "tool": "pycatia",
+  "tool_version": null,
+  "export_time": "2026-06-29T10:52:19.748797",
+  "success": false,
+  "error": "pycatia not installed. Run: pip install pycatia",
+  "pages": 0,
+  "page_size": null,
+  "orientation": null
+}

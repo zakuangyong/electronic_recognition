@@ -245,8 +245,16 @@
       "aliases": [
         "GSD",
         "gsd",
+        "GSD图形标识",
+        "GSD符号",
+        "小矩形带三角齿",
+        "齿形矩形",
+        "锯齿矩形",
+        "矩形带锯齿",
+        "矩形带三角齿",
         "横向GSD",
-        "竖向GSD"
+        "竖向GSD",
+        "旋转GSD"
       ],
       "notes": "由用户提供并命名；三个方向样本与主图属于同一图形，不代表不同元件。",
       "source": "C:\\Users\\Lenovo\\Desktop\\电路图素材\\GSD.png",
@@ -7595,6 +7603,55 @@
         0.02231023,
         0.57664413
       ]
+    },
+    {
+      "id": "user-thermal-relay-fr",
+      "label": "热继电器",
+      "image_path": "assets/components/user-thermal-relay-fr.png",
+      "variant_images": [],
+      "component_type": "图形标识",
+      "model": "FR",
+      "definition": "用户提供的热继电器图形标识，用于识别型号或代号为 FR 的热继电器符号。",
+      "standards": [],
+      "aliases": [
+        "FR",
+        "热继电器",
+        "热过载继电器",
+        "thermal relay",
+        "overload relay"
+      ],
+      "notes": "用户提供的图纸符号样本；左侧为热继电器本体/驱动机构，右侧为通过虚线机械联动的触点。",
+      "source": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\codex-clipboard-59e561d6-6286-4484-aff9-71b09c4c93c2.png",
+      "dhash": "c0a505f4e525e5c0",
+      "color_histogram": [
+        0.0,
+        0.00027846,
+        0.00452505,
+        0.00703123,
+        0.0129486,
+        0.01329668,
+        0.0271503,
+        0.57635209,
+        0.0,
+        0.00027846,
+        0.00452505,
+        0.00703123,
+        0.0129486,
+        0.01329668,
+        0.0271503,
+        0.57635209,
+        0.0,
+        0.00027846,
+        0.00452505,
+        0.00703123,
+        0.0129486,
+        0.01329668,
+        0.0271503,
+        0.57635209
+      ],
+      "enabled": true,
+      "created_at": "2026-06-30T06:28:54Z",
+      "updated_at": "2026-06-30T06:28:54Z"
     }
   ]
 }

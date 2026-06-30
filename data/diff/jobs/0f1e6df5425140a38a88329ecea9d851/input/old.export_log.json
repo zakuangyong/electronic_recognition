@@ -1,0 +1,12 @@
+{
+  "source": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\0f1e6df5425140a38a88329ecea9d851\\input\\raw.CATDrawing",
+  "output": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\0f1e6df5425140a38a88329ecea9d851\\input\\old.pdf",
+  "tool": "pycatia",
+  "tool_version": "0.9.6",
+  "export_time": "2026-06-27T21:34:20.968218",
+  "success": true,
+  "error": null,
+  "pages": 1,
+  "page_size": null,
+  "orientation": null
+}

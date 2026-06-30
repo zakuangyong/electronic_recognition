@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Callable
@@ -16,17 +18,32 @@ class QdrantVectorStore:
         vector_size: int = 0,
         client: Any | None = None,
         client_factory: Callable[[], Any] | None = None,
+        lock: "threading.Lock | threading.RLock | None" = None,
     ) -> None:
         self.collection_name = collection_name
         self.vector_size = vector_size
         self._client = client
         self._client_factory = client_factory
+        # Embedded Qdrant (QdrantLocal) is not safe for concurrent access. The
+        # api layer shares one client process-wide, so all operations must be
+        # serialized through this lock to keep the background auto-index thread
+        # and request threads from racing on the same local store.
+        self._lock = lock
         self._ready = False
+
+    def _guard(self) -> AbstractContextManager[Any]:
+        return self._lock if self._lock is not None else nullcontext()
 
     def point_id_for_chunk(self, chunk_id: str) -> str:
         return str(uuid5(NAMESPACE_URL, chunk_id))
 
     def ensure_collection(self) -> None:
+        if self._ready:
+            return
+        with self._guard():
+            self._ensure_collection_locked()
+
+    def _ensure_collection_locked(self) -> None:
         if self._ready:
             return
         client = self._get_client()
@@ -67,9 +84,29 @@ class QdrantVectorStore:
             return 0
         if len(chunks) != len(vectors):
             raise ValueError("chunks 与 vectors 数量不一致")
-        if self.vector_size <= 0 and vectors:
-            self.vector_size = len(vectors[0])
-        self.ensure_collection()
+        with self._guard():
+            if self.vector_size <= 0 and vectors:
+                self.vector_size = len(vectors[0])
+            self._ensure_collection_locked()
+            return self._upsert_locked(
+                result_id=result_id,
+                drawing_id=drawing_id,
+                chunks=chunks,
+                vectors=vectors,
+                embedding_model=embedding_model,
+                builder_version=builder_version,
+            )
+
+    def _upsert_locked(
+        self,
+        *,
+        result_id: str,
+        drawing_id: str,
+        chunks: list[SearchChunk],
+        vectors: list[list[float]],
+        embedding_model: str,
+        builder_version: str,
+    ) -> int:
         client = self._get_client()
         points = []
         for chunk, vector in zip(chunks, vectors):
@@ -105,17 +142,25 @@ class QdrantVectorStore:
         return len(points)
 
     def delete_result(self, result_id: str) -> None:
-        self.ensure_collection()
-        self._delete_by_field("result_id", result_id)
+        with self._guard():
+            self._ensure_collection_locked()
+            self._delete_by_field("result_id", result_id)
 
     def delete_drawing(self, drawing_id: str) -> None:
-        self.ensure_collection()
-        self._delete_by_field("drawing_id", drawing_id)
+        with self._guard():
+            self._ensure_collection_locked()
+            self._delete_by_field("drawing_id", drawing_id)
 
     def search(self, query_vector: list[float], limit: int) -> list[SearchHit]:
         if not query_vector:
             return []
-        self.ensure_collection()
+        with self._guard():
+            self._ensure_collection_locked()
+            return self._search_locked(query_vector, limit)
+
+    def _search_locked(
+        self, query_vector: list[float], limit: int
+    ) -> list[SearchHit]:
         client = self._get_client()
         if hasattr(client, "query_points"):
             response = client.query_points(
@@ -152,18 +197,30 @@ class QdrantVectorStore:
             )
         return hits
 
+    def ping(self) -> bool:
+        """Open the client and report whether the collection exists.
+
+        Used by startup warmup to surface real client/lock errors (e.g. a stale
+        embedded-Qdrant ``.lock``) early, without forcing collection creation on
+        a fresh deployment that has no vectors yet.
+        """
+        with self._guard():
+            client = self._get_client()
+            return bool(client.collection_exists(self.collection_name))
+
     def count(self) -> int:
-        self.ensure_collection()
-        return int(
-            getattr(
-                self._get_client().count(
-                    collection_name=self.collection_name,
-                    exact=True,
-                ),
-                "count",
-                0,
+        with self._guard():
+            self._ensure_collection_locked()
+            return int(
+                getattr(
+                    self._get_client().count(
+                        collection_name=self.collection_name,
+                        exact=True,
+                    ),
+                    "count",
+                    0,
+                )
             )
-        )
 
     def health(self) -> dict[str, object]:
         try:

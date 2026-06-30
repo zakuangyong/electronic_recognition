@@ -20,6 +20,7 @@ class DrawingSearchService:
         vector_store: Any | None = None,
         bm25_limit: int = 50,
         vector_limit: int = 50,
+        vector_min_score: float = 0.55,
         rrf_k: int = 60,
         default_limit: int = 20,
         mode: str = "bm25",
@@ -31,6 +32,7 @@ class DrawingSearchService:
         self.vector_store = vector_store
         self.bm25_limit = bm25_limit
         self.vector_limit = vector_limit
+        self.vector_min_score = max(0.0, vector_min_score)
         self.rrf_k = rrf_k
         self.default_limit = default_limit
         self.mode = mode
@@ -107,6 +109,7 @@ class DrawingSearchService:
             debug=debug,
             deduplicate=self.deduplicate,
             filters=parsed.filters,
+            query_terms=_query_terms(parsed),
         )
         fusion_ms = _elapsed_ms(fused_started)
         degraded = bool(degraded_reason)
@@ -188,13 +191,44 @@ class DrawingSearchService:
             query_vector = self.embedding_backend.embed_query(query)
             if not query_vector:
                 return [], "向量查询结果为空，已降级为 Exact + BM25。"
-            return self.vector_store.search(query_vector, self.vector_limit), ""
+            hits = self.vector_store.search(query_vector, self.vector_limit)
+            return [
+                hit
+                for hit in hits
+                if float(getattr(hit, "score", 0.0) or 0.0)
+                >= self.vector_min_score
+            ], ""
         except Exception as exc:
             return [], str(exc)
 
 
 def _elapsed_ms(started: float) -> int:
     return int(round((time.perf_counter() - started) * 1000))
+
+
+def _query_terms(parsed: Any) -> list[str]:
+    """Terms used to center/highlight result snippets: the raw query phrase,
+    its keywords, and any exact-term values. Deduplicated, order preserved."""
+    candidates: list[str] = []
+    raw = str(getattr(parsed, "raw_query", "") or "").strip()
+    if raw:
+        candidates.append(raw)
+    for keyword in getattr(parsed, "keywords", []) or []:
+        text = str(keyword or "").strip()
+        if text:
+            candidates.append(text)
+    for term in getattr(parsed, "exact_terms", []) or []:
+        value = str(getattr(term, "value", "") or "").strip()
+        if value:
+            candidates.append(value)
+    seen: set[str] = set()
+    terms: list[str] = []
+    for term_text in candidates:
+        key = term_text.lower()
+        if key not in seen:
+            seen.add(key)
+            terms.append(term_text)
+    return terms
 
 
 def _retrieval_mode(value: str) -> str:

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>识别工作台 · 组合页签重构草图</title>
+    <style>
+      :root {
+        --ink: #1e2936;
+        --muted: #687585;
+        --line: #dce3ea;
+        --surface: #fff;
+        --surface-alt: #f2f5f8;
+        --accent: #2563eb;
+        --accent-soft: rgba(37, 99, 235, 0.12);
+        --shadow: 0 16px 45px rgba(26, 43, 61, 0.1);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--surface-alt);
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      .wrap {
+        width: min(1500px, calc(100vw - 24px));
+        margin: 18px auto 40px;
+      }
+
+      .screen {
+        overflow: hidden;
+        border: 1px solid rgba(216, 224, 232, 0.96);
+        border-radius: 24px;
+        background: rgba(248, 250, 252, 0.84);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-title {
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,253,.96));
+      }
+
+      .panel-title b {
+        font-size: 14px;
+      }
+
+      .tab-bar {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: rgba(250, 252, 254, 0.72);
+      }
+
+      .tab {
+        padding: 7px 12px;
+        border: 1px solid rgba(210, 220, 232, 0.92);
+        border-radius: 999px;
+        background: #fff;
+        color: #5f7286;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .tab.active {
+        border-color: rgba(37, 99, 235, 0.5);
+        color: #143a7a;
+        background: rgba(37, 99, 235, 0.12);
+      }
+
+      .tab-content {
+        padding: 12px;
+        min-height: 560px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.28fr) minmax(290px, 0.72fr);
+        gap: 10px;
+        align-items: start;
+      }
+
+      .preview-shell,
+      .side-shell {
+        overflow: hidden;
+        border: 1px solid rgba(216, 224, 232, 0.92);
+        border-radius: 16px;
+        background: #fff;
+      }
+
+      .preview-toolbar,
+      .side-toolbar {
+        padding: 9px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid rgba(216, 224, 232, 0.72);
+        background: rgba(248, 250, 252, 0.92);
+        color: #526b82;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .mini-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .mini-btn {
+        height: 30px;
+        padding: 0 10px;
+        border: 1px solid rgba(210, 220, 232, 0.92);
+        border-radius: 10px;
+        background: #fff;
+        color: #38506a;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .preview-canvas {
+        min-height: 450px;
+        position: relative;
+        background:
+          radial-gradient(circle at 18% 14%, rgba(37, 99, 235, 0.12), transparent 45%),
+          linear-gradient(90deg, rgba(90, 124, 160, 0.07) 1px, transparent 1px),
+          linear-gradient(rgba(90, 124, 160, 0.07) 1px, transparent 1px),
+          #fff;
+        background-size: auto, 20px 20px, 20px 20px, auto;
+      }
+
+      .drawing-card {
+        position: absolute;
+        inset: 32px 40px;
+        border: 1px solid rgba(216, 224, 232, 0.92);
+        border-radius: 18px;
+        background: rgba(248, 250, 252, 0.96);
+      }
+
+      .callout {
+        position: absolute;
+        padding: 6px 10px;
+        border: 1px solid rgba(37, 99, 235, 0.28);
+        border-radius: 12px;
+        background: rgba(37, 99, 235, 0.12);
+        color: #143a7a;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .c1 { top: 72px; left: 70px; }
+      .c2 { top: 150px; right: 88px; }
+      .c3 { bottom: 96px; left: 140px; }
+
+      .side-shell {
+        display: flex;
+        flex-direction: column;
+        min-height: 450px;
+      }
+
+      .side-list {
+        min-height: 0;
+        max-height: 450px;
+        overflow-y: auto;
+        padding: 10px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .rule-card {
+        padding: 11px 12px;
+        border: 1px solid rgba(216, 224, 232, 0.92);
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+      }
+
+      .rule-card strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 10px;
+        margin: 0 0 8px;
+      }
+
+      .meta-grid div {
+        min-width: 0;
+      }
+
+      .meta-grid dt {
+        font-size: 10px;
+        color: #8597aa;
+      }
+
+      .meta-grid dd {
+        margin: 0;
+        font-size: 12px;
+        color: #44566a;
+      }
+
+      .member-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .member-chip {
+        padding: 5px 8px;
+        border: 1px solid rgba(210, 220, 232, 0.92);
+        border-radius: 999px;
+        background: rgba(248, 250, 252, 0.92);
+        color: #42576d;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .note {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="screen">
+        <div class="panel-title">
+          <b>识别结果</b>
+        </div>
+
+        <div class="tab-bar">
+          <span class="tab">元件标识 (16)</span>
+          <span class="tab active">组合 (1)</span>
+          <span class="tab">图纸标签表</span>
+          <span class="tab">控制/信号信息</span>
+          <span class="tab">图签信息</span>
+        </div>
+
+        <div class="tab-content">
+          <div class="split">
+            <section class="preview-shell">
+              <div class="preview-toolbar">
+                <span>图纸预览</span>
+                <div class="mini-group">
+                  <button class="mini-btn">上一页</button>
+                  <span>第 3 / 6 页</span>
+                  <button class="mini-btn">下一页</button>
+                </div>
+              </div>
+              <div class="preview-canvas">
+                <div class="drawing-card"></div>
+                <div class="callout c1">组合 1</div>
+                <div class="callout c2">KM1</div>
+                <div class="callout c3">FU1</div>
+              </div>
+            </section>
+
+            <aside class="side-shell">
+              <div class="side-toolbar">
+                <span>组合规则信息</span>
+                <span>combinations</span>
+              </div>
+              <div class="side-list">
+                <article class="rule-card">
+                  <strong>自定义组合1</strong>
+                  <dl class="meta-grid">
+                    <div><dt>规则来源</dt><dd>自定义</dd></div>
+                    <div><dt>页码</dt><dd>第 3 页</dd></div>
+                    <div><dt>规则 ID</dt><dd>rule-custom-1</dd></div>
+                    <div><dt>成员数</dt><dd>4</dd></div>
+                    <div><dt>组合依据</dt><dd>KM1 + FU1 + 线号</dd></div>
+                    <div><dt>置信度</dt><dd>92%</dd></div>
+                  </dl>
+                  <div class="member-row">
+                    <span class="member-chip">KM1 接触器</span>
+                    <span class="member-chip">FU1 熔断器</span>
+                    <span class="member-chip">X1 端子</span>
+                    <span class="member-chip">线号 L1</span>
+                  </div>
+                  <p class="note">右侧列表保持面板内滚动；左侧图纸预览与“元件标识”页签共用相同比例。</p>
+                </article>
+
+                <article class="rule-card">
+                  <strong>内置组合 2</strong>
+                  <dl class="meta-grid">
+                    <div><dt>规则来源</dt><dd>内置</dd></div>
+                    <div><dt>页码</dt><dd>第 5 页</dd></div>
+                    <div><dt>规则 ID</dt><dd>builtin-motor-starter</dd></div>
+                    <div><dt>成员数</dt><dd>3</dd></div>
+                    <div><dt>组合依据</dt><dd>QF + KM + FR</dd></div>
+                    <div><dt>置信度</dt><dd>88%</dd></div>
+                  </dl>
+                  <div class="member-row">
+                    <span class="member-chip">QF 断路器</span>
+                    <span class="member-chip">KM 交流接触器</span>
+                    <span class="member-chip">FR 热继电器</span>
+                  </div>
+                </article>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+  </html>

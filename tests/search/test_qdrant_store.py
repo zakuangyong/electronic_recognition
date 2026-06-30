@@ -124,6 +124,78 @@ def test_qdrant_store_upsert_search_and_delete() -> None:
     assert store.count() == 0
 
 
+def test_qdrant_store_serializes_concurrent_ops() -> None:
+    import threading
+
+    client = _FakeQdrantClient()
+    store = QdrantVectorStore(
+        collection_name="demo_v2",
+        vector_size=2,
+        client=client,
+        lock=threading.RLock(),
+    )
+    store.upsert_chunks(
+        result_id="seed",
+        drawing_id="d",
+        chunks=[
+            SearchChunk(
+                chunk_id="seed:c",
+                drawing_id="d",
+                chunk_type="drawing",
+                text="t",
+                title="t",
+                metadata={},
+            )
+        ],
+        vectors=[[0.5, 0.5]],
+        embedding_model="m",
+        builder_version="2",
+    )
+
+    errors: list[Exception] = []
+
+    def search_worker() -> None:
+        try:
+            for _ in range(100):
+                store.search([0.0, 1.0], limit=2)
+        except Exception as exc:  # pragma: no cover - failure path
+            errors.append(exc)
+
+    def upsert_worker() -> None:
+        try:
+            for index in range(100):
+                store.upsert_chunks(
+                    result_id=f"r{index}",
+                    drawing_id="d",
+                    chunks=[
+                        SearchChunk(
+                            chunk_id=f"r{index}:c",
+                            drawing_id="d",
+                            chunk_type="drawing",
+                            text="t",
+                            title="t",
+                            metadata={},
+                        )
+                    ],
+                    vectors=[[0.5, 0.5]],
+                    embedding_model="m",
+                    builder_version="2",
+                )
+        except Exception as exc:  # pragma: no cover - failure path
+            errors.append(exc)
+
+    threads = [
+        threading.Thread(target=search_worker),
+        threading.Thread(target=upsert_worker),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+
+
 def test_qdrant_store_uses_stable_point_ids() -> None:
     store = QdrantVectorStore(
         collection_name="demo_v2",

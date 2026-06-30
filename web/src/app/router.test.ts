@@ -20,5 +20,6 @@ describe('app router', () => {
 
     expect(paths).toContain('/')
     expect(paths).toEqual(expect.arrayContaining(appRoutePaths))
+    expect(paths).toContain('/drawing-diff')
   })
 })

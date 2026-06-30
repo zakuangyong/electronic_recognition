@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C 方案 - 高密度分析屏</title>
+  <style>
+    :root {
+      --bg: #edf1f5;
+      --surface: rgba(255,255,255,0.9);
+      --surface-2: rgba(245,248,251,0.92);
+      --line: #d4dde6;
+      --line-strong: #b9c7d4;
+      --text: #203243;
+      --muted: #677a8d;
+      --accent: #2257c8;
+      --accent-soft: rgba(34, 87, 200, 0.1);
+      --warn: #c97a1f;
+      --shadow: 0 18px 44px rgba(27, 50, 79, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(34,87,200,0.08), transparent 18%),
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.82)),
+        var(--bg);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      border-bottom: 1px solid rgba(212,221,230,0.95);
+      backdrop-filter: blur(18px);
+      background: rgba(237,241,245,0.92);
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chip {
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.88);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .wrap {
+      width: min(1540px, calc(100vw - 28px));
+      margin: 24px auto 56px;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .hero, .notes {
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(212,221,230,0.95);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+    }
+    .hero h2 {
+      margin: 0 0 12px;
+      font-size: 32px;
+    }
+    .hero p, .notes li {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .tag {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .screen {
+      background: rgba(248,250,252,0.82);
+      border: 1px solid rgba(212,221,230,0.95);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-top: 24px;
+    }
+    .screen-header {
+      padding: 20px 24px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(245,248,251,0.92));
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #708496;
+      font-weight: 700;
+    }
+    .screen-header h3 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .screen-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 700px;
+      line-height: 1.55;
+    }
+    .meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .meta span {
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.94);
+      color: #4d667d;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .canvas {
+      padding: 18px;
+      min-height: 690px;
+    }
+    .analysis-shell {
+      display: grid;
+      grid-template-rows: 62px 1fr;
+      gap: 14px;
+      min-height: 640px;
+    }
+    .toolbar, .board, .panel, .result-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+    }
+    .toolbar-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control, .button, .chip-small {
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.95);
+      color: #556c80;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 14px;
+      font-weight: 600;
+    }
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .board {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr) 320px;
+      gap: 14px;
+    }
+    .panel {
+      padding: 14px;
+      background: var(--surface-2);
+    }
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .panel-title b {
+      font-size: 18px;
+    }
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #708496;
+      font-weight: 700;
+    }
+    .facet, .tree-item, .metric, .detail-row, .result-card, .preview-box, .field {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.96);
+    }
+    .tree-item, .facet {
+      padding: 12px 13px;
+      margin-bottom: 10px;
+      color: #556c80;
+    }
+    .tree-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(34,87,200,0.2);
+      color: var(--accent);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .metric {
+      padding: 13px;
+    }
+    .metric b {
+      display: block;
+      margin-top: 6px;
+      font-size: 24px;
+    }
+    .dense-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 12px;
+    }
+    .result-card {
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+    .result-card h4 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+    .result-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(34,87,200,0.1);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .preview-box {
+      min-height: 220px;
+      background:
+        radial-gradient(circle at top right, rgba(34,87,200,0.09), transparent 28%),
+        linear-gradient(90deg, rgba(90,124,160,0.08) 1px, transparent 1px),
+        linear-gradient(rgba(90,124,160,0.08) 1px, transparent 1px),
+        #fff;
+      background-size: auto, 22px 22px, 22px 22px, auto;
+    }
+    .detail-row {
+      padding: 12px 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: #556c80;
+    }
+    .field {
+      padding: 13px 14px;
+      min-height: 48px;
+      color: #7b8d9e;
+      margin-bottom: 10px;
+    }
+    .warn {
+      color: var(--warn);
+    }
+    ul { margin: 10px 0 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>C 方案 · 高密度分析屏</h1>
+      <p>强调专业分析工具感，尽量把筛选、结果、详情和诊断信息同时留在首屏，适合复杂检索和规则分析。</p>
+    </div>
+    <div>
+      <div class="chips">
+        <a class="chip" href="/files/option-a-full.html">A 中枢控制台</a>
+        <a class="chip" href="/files/option-b-full.html">B 流程编排台</a>
+        <a class="chip active" href="/files/option-c-full.html">C 高密度分析屏</a>
+      </div>
+      <p style="text-align:right;margin-top:8px;">更像专业工具，而不是传统后台。</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="intro">
+      <div class="hero">
+        <h2>把“分析能力”放到首屏中心</h2>
+        <p>这个方案牺牲一部分轻松感，换来更强的专业工具气质。它适合高频使用者，特别是需要同时看过滤条件、结果列表、图片预览和诊断信息的场景。</p>
+        <div class="tags">
+          <span class="tag">高信息密度</span>
+          <span class="tag">首屏多视图</span>
+          <span class="tag">适合分析与比对</span>
+          <span class="tag">学习成本略高</span>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="label" style="margin-bottom:10px;">适配判断</div>
+        <ul>
+          <li>图纸检索最适合这个方向，能充分展示检索、比对和调试能力。</li>
+          <li>知识库管理在规则校验和试运行视角下也有优势。</li>
+          <li>识别工作台会显得偏重，需要特别控制密度，避免用户一上来就被压住。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Workbench</p>
+          <h3>识别工作台</h3>
+          <p>工作台被设计成“任务分析屏”，不是传统上传页，而是把任务状态、预览、异常和结果摘要同时放到首屏。</p>
+        </div>
+        <div class="meta">
+          <span>任务在线监控</span>
+          <span>异常页 2</span>
+          <span>结果已刷新</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">批次: ER-20260625-018</div>
+              <div class="control">上传源: 本地文件</div>
+              <div class="control">DPI 220</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">开始识别</div>
+              <div class="button">异常复核</div>
+              <div class="button">导出报告</div>
+            </div>
+          </div>
+          <div class="board">
+            <aside class="panel">
+              <div class="panel-title"><b>任务树</b><span class="label">输入 / 批次</span></div>
+              <div class="tree-item active">当前批次 · 5 个文件</div>
+              <div class="tree-item">schematic-10.pdf</div>
+              <div class="tree-item">schematic-11.pdf</div>
+              <div class="tree-item">panel-A3.png</div>
+              <div class="tree-item">motor-line-07.pdf</div>
+              <div class="facet"><span class="label">异常过滤</span><div style="margin-top:8px;">低清晰度 / 图框偏移 / OCR 缺失</div></div>
+            </aside>
+            <main>
+              <div class="metric-grid">
+                <div class="metric"><span>总页数</span><b>38</b></div>
+                <div class="metric"><span>检测元件</span><b>168</b></div>
+                <div class="metric"><span>规则命中</span><b>12</b></div>
+                <div class="metric"><span>异常告警</span><b class="warn">4</b></div>
+              </div>
+              <div class="dense-grid">
+                <section class="panel">
+                  <div class="panel-title"><b>图纸预览</b><span class="label">主画布</span></div>
+                  <div class="preview-box" style="min-height:360px;"></div>
+                </section>
+                <section class="panel">
+                  <div class="panel-title"><b>结果摘要</b><span class="label">结构视图</span></div>
+                  <div class="detail-row"><span>标题栏字段</span><b>9 / 10</b></div>
+                  <div class="detail-row"><span>检测组件</span><b>168</b></div>
+                  <div class="detail-row"><span>开放符号</span><b>23</b></div>
+                  <div class="detail-row"><span>建议复核</span><b class="warn">4</b></div>
+                  <div class="result-card">
+                    <h4>异常页提示</h4>
+                    <p>第 05 页图框偏移，第 08 页局部区域噪声较高，建议人工复核。</p>
+                  </div>
+                </section>
+              </div>
+            </main>
+            <aside class="panel">
+              <div class="panel-title"><b>侧边诊断</b><span class="label">状态 / 操作</span></div>
+              <div class="detail-row"><span>阶段</span><b>规则融合</b></div>
+              <div class="detail-row"><span>更新时间</span><b>14:23:11</b></div>
+              <div class="detail-row"><span>状态</span><b>处理中</b></div>
+              <div class="result-card">
+                <h4>操作建议</h4>
+                <p>优先复核低质量页，再导出最终结果，以避免误检影响后续知识回流。</p>
+                <div class="badge-row">
+                  <span class="badge">质检</span>
+                  <span class="badge">复核</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Knowledge</p>
+          <h3>知识库管理</h3>
+          <p>更强调“规则分析和素材对照”，可以让编辑、试运行结果、图片预览和差异信息同时呈现，适合复杂规则维护。</p>
+        </div>
+        <div class="meta">
+          <span>组件 842</span>
+          <span>规则 96</span>
+          <span>试运行在线</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">对象类型: 规则</div>
+              <div class="control">scope: same_page</div>
+              <div class="control">confidence ≥ 0.95</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">保存规则</div>
+              <div class="button">试运行</div>
+              <div class="button">版本对比</div>
+            </div>
+          </div>
+          <div class="board">
+            <aside class="panel">
+              <div class="panel-title"><b>目录树</b><span class="label">Facet / 筛选</span></div>
+              <div class="field">按名称、别名、型号搜索</div>
+              <div class="facet">单元件 842</div>
+              <div class="facet">组合规则 96</div>
+              <div class="tree-item active">电机启动保护组合</div>
+              <div class="tree-item">接触器自锁回路</div>
+              <div class="tree-item">指示灯控制回路</div>
+            </aside>
+            <main>
+              <div class="dense-grid">
+                <section class="panel">
+                  <div class="panel-title"><b>规则编辑器</b><span class="label">主编辑区</span></div>
+                  <div class="field">规则名称 / 规则 ID</div>
+                  <div class="field">成员元件 / 匹配范围 / 阈值</div>
+                  <div class="field" style="min-height:160px;">规则说明、别名、排除条件、推理提示、图像约束……</div>
+                </section>
+                <section class="panel">
+                  <div class="panel-title"><b>素材对照</b><span class="label">图样 / 命中</span></div>
+                  <div class="preview-box" style="min-height:300px;"></div>
+                </section>
+              </div>
+              <section class="panel" style="margin-top:12px;">
+                <div class="panel-title"><b>试运行结果</b><span class="label">命中样本</span></div>
+                <div class="result-card">
+                  <h4>样本 A · 命中成功</h4>
+                  <p>热继电器、接触器、停止按钮在同页闭环出现，满足规则约束。</p>
+                </div>
+                <div class="result-card">
+                  <h4>样本 B · 需要复核</h4>
+                  <p>辅助触点位置存在歧义，建议查看变体图与相邻区域。</p>
+                </div>
+              </section>
+            </main>
+            <aside class="panel">
+              <div class="panel-title"><b>诊断侧栏</b><span class="label">统计 / 异常</span></div>
+              <div class="detail-row"><span>成员数</span><b>4</b></div>
+              <div class="detail-row"><span>命中率</span><b>92%</b></div>
+              <div class="detail-row"><span>误报样本</span><b class="warn">2</b></div>
+              <div class="detail-row"><span>待补图片</span><b class="warn">1</b></div>
+              <div class="result-card">
+                <h4>维护建议</h4>
+                <p>补充 KM 变体图，并在说明中加入“带指示灯的接线端子”排除条件。</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h3>图纸检索</h3>
+          <p>这是最适配 C 方案的页面。查询、过滤、结果、预览、摘要和调试说明可以同时出现在首屏，检索像分析台而不是搜索页。</p>
+        </div>
+        <div class="meta">
+          <span>Hybrid 在线</span>
+          <span>总命中 126</span>
+          <span>降级: 无</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">Query: 电机启动保护回路</div>
+              <div class="control">Mode: hybrid</div>
+              <div class="control">Revision: latest</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">开始检索</div>
+              <div class="button">重建索引</div>
+              <div class="button">保存查询</div>
+            </div>
+          </div>
+          <div class="board">
+            <aside class="panel">
+              <div class="panel-title"><b>过滤器</b><span class="label">Facet</span></div>
+              <div class="field">项目名称过滤</div>
+              <div class="field">页码 / 修订号 / 图纸类别</div>
+              <div class="facet">高相关结果 17</div>
+              <div class="facet">项目 A 42</div>
+              <div class="facet">项目 B 31</div>
+              <div class="tree-item active">调试视图已开启</div>
+            </aside>
+            <main>
+              <div class="metric-grid">
+                <div class="metric"><span>总命中</span><b>126</b></div>
+                <div class="metric"><span>高相关</span><b>17</b></div>
+                <div class="metric"><span>首项分数</span><b>0.92</b></div>
+                <div class="metric"><span>降级次数</span><b>0</b></div>
+              </div>
+              <section class="panel">
+                <div class="panel-title"><b>结果列表</b><span class="label">主结果区</span></div>
+                <div class="result-card">
+                  <h4>线路图 03 · 电机启动保护回路</h4>
+                  <p>融合文本召回、结构召回和别名扩展词，命中热继电器 + 接触器 + 停止按钮组合。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.92</span>
+                    <span class="badge">bm25 0.86</span>
+                    <span class="badge">vector 0.95</span>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <h4>配电柜图纸 B12 · 接触器自锁</h4>
+                  <p>结构匹配良好，文本相关度次高，适合作为第二候选。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.88</span>
+                    <span class="badge">fusion</span>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <h4>工位驱动图纸 C07 · 指示灯控制回路</h4>
+                  <p>基于规则别名扩展召回，适合作为近似案例。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.81</span>
+                    <span class="badge">alias expansion</span>
+                  </div>
+                </div>
+              </section>
+            </main>
+            <aside class="panel">
+              <div class="panel-title"><b>详情与调试</b><span class="label">Preview / Explain</span></div>
+              <div class="preview-box"></div>
+              <div class="detail-row" style="margin-top:12px;"><span>解析 Query</span><b>完成</b></div>
+              <div class="detail-row"><span>融合权重</span><b>0.65 / 0.35</b></div>
+              <div class="detail-row"><span>降级原因</span><b>无</b></div>
+              <div class="result-card">
+                <h4>为什么命中</h4>
+                <p>文本中出现“电机启动保护”，图像结构中同时出现热继电器和接触器，规则摘要也与该功能组匹配。</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

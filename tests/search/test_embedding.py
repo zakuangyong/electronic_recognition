@@ -1,11 +1,55 @@
 from __future__ import annotations
 
 import math
+import sys
+import types
 
 from electronic_recognition.search.embedding import (
     DisabledEmbeddingBackend,
     SentenceTransformerEmbeddingBackend,
 )
+
+
+def _install_fake_sentence_transformers(monkeypatch) -> dict:
+    captured: dict = {}
+
+    class _FakeST:
+        def __init__(self, source, **kwargs) -> None:
+            captured["source"] = source
+            captured["kwargs"] = kwargs
+
+        def encode(self, texts, **_kwargs):
+            return [[1.0, 0.0] for _ in texts]
+
+    module = types.ModuleType("sentence_transformers")
+    module.SentenceTransformer = _FakeST
+    monkeypatch.setitem(sys.modules, "sentence_transformers", module)
+    return captured
+
+
+def test_embedding_model_path_loads_offline(monkeypatch) -> None:
+    captured = _install_fake_sentence_transformers(monkeypatch)
+    backend = SentenceTransformerEmbeddingBackend(
+        model_id="BAAI/bge-small-zh-v1.5",
+        model_path="data/models/bge-small-zh-v1.5",
+    )
+
+    backend.embed_query("hi")
+
+    assert captured["source"] == "data/models/bge-small-zh-v1.5"
+    assert captured["kwargs"].get("local_files_only") is True
+
+
+def test_embedding_without_model_path_allows_network(monkeypatch) -> None:
+    captured = _install_fake_sentence_transformers(monkeypatch)
+    backend = SentenceTransformerEmbeddingBackend(
+        model_id="BAAI/bge-small-zh-v1.5",
+    )
+
+    backend.embed_query("hi")
+
+    assert captured["source"] == "BAAI/bge-small-zh-v1.5"
+    assert "local_files_only" not in captured["kwargs"]
 
 
 class _FakeSentenceTransformerModel:

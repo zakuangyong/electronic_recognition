@@ -15,16 +15,25 @@ dependencies = [
   "PyMuPDF>=1.24",
   "python-multipart>=0.0.18",
   "uvicorn>=0.34",
+  "numpy>=1.26",
+  "opencv-python>=4.9",
+  "openpyxl>=3.1",
+  "pycatia>=0.8; platform_system == 'Windows'",
+  "pywin32>=306; platform_system == 'Windows'",
+  # Vector search is on by default (ER_SEARCH_MODE=hybrid). These are required
+  # at runtime — keeping them out of an optional extra is what caused servers to
+  # silently degrade to BM25 when the env was installed without `[search]`.
+  "qdrant-client>=1.9",
+  "sentence-transformers>=3.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 layout = []
 ocr = []
-search = [
-  "qdrant-client>=1.9",
-  "sentence-transformers>=3.0",
-]
+# Kept for backward compatibility (e.g. `pip install -e ".[search]"`); the
+# packages now live in the base dependencies above.
+search = []
 
 [project.scripts]
 electronic-recognition = "electronic_recognition.cli:main"

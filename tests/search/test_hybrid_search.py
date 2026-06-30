@@ -21,11 +21,11 @@ class _FakeEmbeddingBackend:
 
 
 class _FakeVectorStore:
-    def __init__(self, hit: SearchHit) -> None:
-        self.hit = hit
+    def __init__(self, *hits: SearchHit) -> None:
+        self.hits = list(hits)
 
     def search(self, query_vector: list[float], limit: int) -> list[SearchHit]:
-        return [self.hit]
+        return self.hits[:limit]
 
     def health(self) -> dict[str, object]:
         return {"available": True, "collection": "demo_v2", "points": 1}
@@ -86,6 +86,59 @@ def test_hybrid_search_returns_dense_matches(tmp_path: Path) -> None:
     assert payload["degraded"] is False
     assert payload["match_counts"]["dense"] == 1
     assert "dense" in payload["items"][0]["match_sources"]
+
+
+def test_vector_search_filters_low_similarity_hits(tmp_path: Path) -> None:
+    store = DrawingSearchStore(tmp_path / "drawings.db")
+    builder = DrawingDocumentBuilder()
+    for result_id, title in (
+        ("result-related", "related fan control"),
+        ("result-unrelated", "unrelated lighting cabinet"),
+    ):
+        result_dir = _write_result(
+            tmp_path,
+            result_id,
+            {
+                "document": f"{result_id}.pdf",
+                "title_block": {"fields": {"drawing_title": title}},
+                "detected_components": [],
+                "detected_combinations": [],
+                "preview_pages": [{"page": 1}],
+                "meta": {"page_count": 1},
+            },
+        )
+        store.upsert_document(
+            builder.build(result_id, result_dir, _read_result(result_dir))
+        )
+    related = store.result_status("result-related")
+    unrelated = store.result_status("result-unrelated")
+    service = DrawingSearchService(
+        store,
+        embedding_backend=_FakeEmbeddingBackend(),
+        vector_store=_FakeVectorStore(
+            SearchHit(
+                chunk_id=f"{related['drawing_id']}:drawing",
+                drawing_id=str(related["drawing_id"]),
+                score=0.82,
+                source="dense",
+                rank=1,
+            ),
+            SearchHit(
+                chunk_id=f"{unrelated['drawing_id']}:drawing",
+                drawing_id=str(unrelated["drawing_id"]),
+                score=0.31,
+                source="dense",
+                rank=2,
+            ),
+        ),
+        vector_min_score=0.55,
+        mode="vector",
+    )
+
+    payload = service.search("fan control", retrieval_mode="vector")
+
+    assert payload["match_counts"]["dense"] == 1
+    assert [item["result_id"] for item in payload["items"]] == ["result-related"]
 
 
 def _write_result(

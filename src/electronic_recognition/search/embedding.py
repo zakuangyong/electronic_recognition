@@ -120,11 +120,14 @@ class SentenceTransformerEmbeddingBackend:
                 "sentence-transformers 未安装，无法启用向量检索。"
             ) from exc
         model_source = self.model_path or self._model_id
+        kwargs: dict[str, Any] = {"device": self.device}
+        # When an explicit local model directory is configured, never reach out
+        # to the network at runtime — this is what makes offline deployment work
+        # after a one-time prefetch.
+        if self.model_path:
+            kwargs["local_files_only"] = True
         try:
-            self._model = SentenceTransformer(
-                model_source,
-                device=self.device,
-            )
+            self._model = SentenceTransformer(model_source, **kwargs)
         except Exception as exc:  # pragma: no cover
             raise RuntimeError(
                 f"Embedding 模型加载失败: {model_source}"

@@ -1,0 +1,1569 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>工作台 / 图纸检索 / 知识库管理 - Diff A 风格草图</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg0: #070b12;
+        --bg1: #0b1220;
+        --ink: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.66);
+        --faint: rgba(255, 255, 255, 0.44);
+        --line: rgba(255, 255, 255, 0.08);
+        --line2: rgba(255, 255, 255, 0.12);
+        --panel0: rgba(255, 255, 255, 0.03);
+        --panel1: rgba(255, 255, 255, 0.05);
+        --panelHead: rgba(0, 0, 0, 0.12);
+        --shadow: rgba(0, 0, 0, 0.35);
+        --cyan: rgba(34, 211, 238, 1);
+        --lime: rgba(163, 255, 18, 1);
+        --red: rgba(255, 0, 0, 1);
+        --amber: rgba(255, 192, 67, 1);
+        --ok: rgba(255, 255, 255, 0.56);
+        --radius-lg: 18px;
+        --radius-xl: 22px;
+        --radius-pill: 999px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+          'Courier New', monospace;
+        --sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei UI',
+          system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: #05070b;
+        color: var(--ink);
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .diff-a-root {
+        min-height: 100dvh;
+        background:
+          radial-gradient(900px 420px at 12% 0%, rgba(34, 211, 238, 0.16), transparent 55%),
+          radial-gradient(980px 520px at 86% 10%, rgba(163, 255, 18, 0.08), transparent 58%),
+          radial-gradient(700px 360px at 70% 100%, rgba(255, 0, 0, 0.12), transparent 56%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+          linear-gradient(135deg, var(--bg0), var(--bg1));
+      }
+      .diff-a-shell {
+        height: 100dvh;
+        padding: 12px;
+        display: grid;
+        grid-template-rows: 62px minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .diff-a-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+          rgba(0, 0, 0, 0.08);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.18);
+      }
+      .diff-a-h {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+      .diff-a-h b {
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .diff-a-h span {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.66);
+        font-variant-numeric: tabular-nums;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 56ch;
+      }
+      .diff-a-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .diff-a-pill {
+        padding: 6px 10px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .diff-a-pill b {
+        color: rgba(255, 255, 255, 0.92);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+      }
+      .diff-a-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.44);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+      }
+      .diff-a-dot.ok {
+        background: rgba(255, 255, 255, 0.62);
+      }
+      .diff-a-dot.warn {
+        background: rgba(255, 192, 67, 0.92);
+      }
+      .diff-a-dot.bad {
+        background: rgba(255, 0, 0, 0.92);
+      }
+
+      .diff-a-nav {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .diff-a-chip {
+        padding: 9px 11px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      }
+      .diff-a-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .diff-a-chip.is-active {
+        border-color: rgba(34, 211, 238, 0.42);
+        background: rgba(34, 211, 238, 0.08);
+      }
+      .diff-a-chip.is-primary {
+        border-color: rgba(163, 255, 18, 0.35);
+        background: rgba(163, 255, 18, 0.08);
+      }
+
+      .diff-a-board {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 320px minmax(680px, 1fr) 300px;
+        gap: 12px;
+      }
+      .diff-a-panel {
+        min-height: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+      .diff-a-panelHeader {
+        padding: 12px 12px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panelHead);
+      }
+      .diff-a-panelBody {
+        min-height: 0;
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+
+      .mock-kbd {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        border: 1px solid var(--line2);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.72);
+      }
+      .mock-btnRow {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .mock-btn {
+        padding: 9px 11px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.22);
+        color: rgba(255, 255, 255, 0.86);
+        font-weight: 800;
+        font-size: 12px;
+        cursor: pointer;
+        transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      }
+      .mock-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(0, 0, 0, 0.3);
+      }
+      .mock-btn.is-active {
+        border-color: rgba(34, 211, 238, 0.42);
+        background: rgba(34, 211, 238, 0.1);
+      }
+      .mock-btn.is-primary {
+        border-color: rgba(163, 255, 18, 0.35);
+        background: rgba(163, 255, 18, 0.1);
+      }
+      .mock-btn.is-danger {
+        border-color: rgba(255, 0, 0, 0.32);
+        background: rgba(255, 0, 0, 0.08);
+      }
+
+      .mock-field {
+        display: grid;
+        gap: 6px;
+      }
+      .mock-field span {
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .mock-field input,
+      .mock-field select {
+        width: 100%;
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+      .mock-field input:focus,
+      .mock-field select:focus {
+        border-color: rgba(34, 211, 238, 0.42);
+        box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12);
+      }
+
+      .mock-list {
+        display: grid;
+        gap: 8px;
+      }
+      .mock-item {
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.16);
+        cursor: pointer;
+        display: grid;
+        gap: 8px;
+        transition: border-color 0.12s ease, transform 0.12s ease, background 0.12s ease;
+      }
+      .mock-item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.22);
+      }
+      .mock-item.is-active {
+        border-color: rgba(34, 211, 238, 0.46);
+        background: rgba(34, 211, 238, 0.08);
+      }
+      .mock-itemHead {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .mock-itemHead strong {
+        font-size: 13px;
+        letter-spacing: 0.01em;
+      }
+      .mock-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: var(--radius-pill);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.04);
+        font-family: var(--mono);
+      }
+      .mock-itemMeta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.64);
+        font-size: 12px;
+      }
+      .mock-itemMeta code {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .mock-empty,
+      .mock-loading {
+        min-height: 220px;
+        border-radius: var(--radius-lg);
+        border: 1px dashed rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.12);
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.66);
+        padding: 16px;
+      }
+      .mock-empty h3,
+      .mock-loading h3 {
+        margin: 0 0 6px;
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 16px;
+        letter-spacing: 0.02em;
+      }
+      .mock-empty p,
+      .mock-loading p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .mock-skeletonGrid {
+        margin-top: 14px;
+        width: min(520px, 100%);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .mock-skeletonGrid span {
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(
+          110deg,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0.05)
+        );
+        background-size: 220% 100%;
+        animation: shimmer 1.1s ease-in-out infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: 0% 0%;
+        }
+        100% {
+          background-position: 140% 0%;
+        }
+      }
+
+      .mock-canvas {
+        position: relative;
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+          radial-gradient(820px 520px at 40% -10%, rgba(34, 211, 238, 0.16), transparent 60%),
+          radial-gradient(720px 480px at 70% 110%, rgba(163, 255, 18, 0.08), transparent 58%),
+          rgba(0, 0, 0, 0.14);
+        min-height: 520px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+      }
+      .mock-canvasHeader {
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.12);
+      }
+      .mock-canvasHeader b {
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .mock-canvasHeader span {
+        font-family: var(--mono);
+        color: rgba(255, 255, 255, 0.64);
+        font-size: 11px;
+      }
+      .mock-canvasBody {
+        position: relative;
+        height: calc(100% - 45px);
+        min-height: 475px;
+      }
+      .mock-pagePaper {
+        position: absolute;
+        inset: 20px 22px;
+        border-radius: 16px;
+        background:
+          radial-gradient(900px 440px at 30% 22%, rgba(255, 255, 255, 0.12), transparent 60%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+      .mock-watermark {
+        position: absolute;
+        left: 22px;
+        bottom: 18px;
+        padding: 6px 10px;
+        border-radius: var(--radius-pill);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.66);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .mock-box {
+        position: absolute;
+        border: 3px solid var(--red);
+        border-radius: 10px;
+        background: transparent;
+        box-shadow: none;
+      }
+      .mock-box.is-dim {
+        opacity: 0.66;
+      }
+      .mock-pin {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(34, 211, 238, 0.9);
+        box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.14);
+        transform: translate(-50%, -50%);
+      }
+
+      .mock-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .mock-tab {
+        padding: 7px 10px;
+        border-radius: var(--radius-pill);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .mock-tab.is-active {
+        border-color: rgba(34, 211, 238, 0.42);
+        background: rgba(34, 211, 238, 0.08);
+      }
+
+      .mock-note {
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.14);
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      .mock-note b {
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .mock-page {
+        display: none;
+        min-height: 0;
+      }
+      .mock-page.is-active {
+        display: block;
+      }
+      .mock-views [data-view] {
+        display: none;
+      }
+      .mock-page[data-state='empty'] .mock-views [data-view='empty'] {
+        display: grid;
+      }
+      .mock-page[data-state='loading'] .mock-views [data-view='loading'] {
+        display: grid;
+      }
+      .mock-page[data-state='ready'] .mock-views [data-view='ready'] {
+        display: grid;
+      }
+      .mock-page[data-state='error'] .mock-views [data-view='error'] {
+        display: grid;
+      }
+
+      .mock-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: none;
+        place-items: center;
+        background: rgba(10, 14, 22, 0.78);
+      }
+      .mock-modal.is-open {
+        display: grid;
+      }
+      .mock-modalCard {
+        width: min(1080px, 92vw);
+        height: min(680px, 82vh);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background:
+          radial-gradient(900px 520px at 20% 20%, rgba(34, 211, 238, 0.18), transparent 60%),
+          radial-gradient(900px 520px at 80% 90%, rgba(163, 255, 18, 0.12), transparent 60%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+          rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        box-shadow: 0 28px 120px rgba(0, 0, 0, 0.55);
+      }
+      .mock-modalHead {
+        padding: 12px 12px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .mock-modalBody {
+        padding: 14px;
+        min-height: 0;
+      }
+      .mock-modalHint {
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+      }
+      .mock-modalClose {
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      @media (max-width: 1120px) {
+        .diff-a-board {
+          grid-template-columns: 1fr;
+        }
+        .diff-a-shell {
+          height: auto;
+          min-height: 100dvh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="diff-a-root">
+      <div class="diff-a-shell">
+        <header class="diff-a-topbar">
+          <div class="diff-a-h">
+            <b id="mockTitle">WORKBENCH</b>
+            <span id="mockSubtitle"
+              >统一到图纸比对（Diff A）风格：三栏工作台 + 玻璃面板 + 克制提示</span
+            >
+          </div>
+          <div class="diff-a-actions">
+            <div class="diff-a-pill" title="当前草图模式仅用于评审交互与布局">
+              <span class="diff-a-dot ok" aria-hidden="true"></span>
+              <span>草图模式</span>
+              <b id="mockStateLabel">就绪</b>
+            </div>
+            <div class="diff-a-nav" role="navigation" aria-label="页面切换">
+              <button class="diff-a-chip is-active" type="button" data-page-link="workbench">
+                识别工作台
+              </button>
+              <button class="diff-a-chip" type="button" data-page-link="search">图纸检索</button>
+              <button class="diff-a-chip" type="button" data-page-link="knowledge">
+                知识库管理
+              </button>
+              <a class="diff-a-chip" href="2026-06-29-drawing-diff-scheme-a.html">图纸比对</a>
+            </div>
+          </div>
+        </header>
+
+        <main class="mock-page is-active" data-page="workbench" data-state="ready">
+          <div class="diff-a-board">
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>输入与任务</b>
+                  <span>上传图纸 → 提交识别 → 轮询状态</span>
+                </div>
+                <span class="mock-kbd">W</span>
+              </div>
+              <div class="diff-a-panelBody">
+                <div class="mock-field">
+                  <span>图纸文件</span>
+                  <input value="project_A_rev03.pdf" aria-label="图纸文件" />
+                </div>
+                <div class="mock-field">
+                  <span>识别模型</span>
+                  <select aria-label="识别模型">
+                    <option selected>vision-prod-2026</option>
+                    <option>vision-fast</option>
+                    <option>vision-debug</option>
+                  </select>
+                </div>
+                <div class="mock-field">
+                  <span>规则集</span>
+                  <select aria-label="规则集">
+                    <option selected>默认规则（生产）</option>
+                    <option>工程 A（定制）</option>
+                    <option>仅元件识别</option>
+                  </select>
+                </div>
+                <div class="mock-btnRow" aria-label="任务操作">
+                  <button class="mock-btn is-primary" type="button" data-action="wb-submit">
+                    提交识别
+                  </button>
+                  <button class="mock-btn" type="button" data-action="wb-reset">重置</button>
+                </div>
+                <div class="mock-note">
+                  <b>计划交互</b>：提交后进入加载态；完成后右侧默认切到“日志”，点击元件会在中间预览定位高亮。
+                </div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>预览与标注</b>
+                  <span
+                    >画布占满 · 轻量工具条（页码 / 缩放 / 标注开关 / 下载）</span
+                  >
+                </div>
+                <div class="mock-btnRow" aria-label="工作台状态切换">
+                  <button class="mock-btn is-active" type="button" data-state="ready">就绪</button>
+                  <button class="mock-btn" type="button" data-state="loading">加载</button>
+                  <button class="mock-btn" type="button" data-state="empty">空态</button>
+                  <button class="mock-btn" type="button" data-state="error">异常</button>
+                </div>
+              </div>
+              <div class="diff-a-panelBody mock-views">
+                <div class="mock-empty" data-view="empty">
+                  <div>
+                    <h3>等待识别结果</h3>
+                    <p>上传图纸并提交后，这里承接预览页与标注框。</p>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="loading">
+                  <div>
+                    <h3>识别中</h3>
+                    <p>正在解析图纸结构、定位元件候选并生成预览页。</p>
+                    <div class="mock-skeletonGrid" aria-hidden="true">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="error">
+                  <div>
+                    <h3>任务失败</h3>
+                    <p>请检查图纸格式、模型配置或网络状态后重试。</p>
+                    <div class="mock-btnRow" style="justify-content: center; margin-top: 14px">
+                      <button class="mock-btn is-danger" type="button" data-action="wb-retry">
+                        重新提交
+                      </button>
+                      <button class="mock-btn" type="button" data-action="wb-open-log">
+                        查看日志
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mock-canvas" data-view="ready" aria-label="识别预览画布">
+                  <div class="mock-canvasHeader">
+                    <b>page 02</b>
+                    <span>zoom 34% · overlays on</span>
+                  </div>
+                  <div class="mock-canvasBody">
+                    <div class="mock-pagePaper" aria-hidden="true"></div>
+                    <div
+                      class="mock-box is-dim"
+                      aria-hidden="true"
+                      style="left: 18%; top: 20%; width: 22%; height: 16%"
+                    ></div>
+                    <div
+                      class="mock-box"
+                      aria-hidden="true"
+                      style="left: 52%; top: 28%; width: 24%; height: 18%"
+                      data-wb-focus-box
+                    ></div>
+                    <div
+                      class="mock-box is-dim"
+                      aria-hidden="true"
+                      style="left: 28%; top: 54%; width: 36%; height: 22%"
+                    ></div>
+                    <div class="mock-pin" aria-hidden="true" style="left: 64%; top: 38%"></div>
+                    <div class="mock-watermark">result_id: R-20260629-001</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>核对与日志</b>
+                  <span>右栏汇总：元件 / 组合 / 告警 / 运行日志</span>
+                </div>
+                <div class="mock-tabs" role="tablist" aria-label="工作台右栏 tabs">
+                  <button class="mock-tab" type="button" data-wb-tab="components">元件</button>
+                  <button class="mock-tab" type="button" data-wb-tab="warnings">告警</button>
+                  <button class="mock-tab is-active" type="button" data-wb-tab="logs">日志</button>
+                </div>
+              </div>
+              <div class="diff-a-panelBody" id="wbRightBody">
+                <div class="mock-list" data-wb-tabview="components" hidden>
+                  <div class="mock-item is-active" data-wb-comp="K1">
+                    <div class="mock-itemHead">
+                      <strong>接触器 K1</strong>
+                      <span class="mock-badge">p02</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>类型 <code>contactor</code></span>
+                      <span>置信度 <code>0.94</code></span>
+                    </div>
+                  </div>
+                  <div class="mock-item" data-wb-comp="FU1">
+                    <div class="mock-itemHead">
+                      <strong>熔断器 FU1</strong>
+                      <span class="mock-badge">p02</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>类型 <code>fuse</code></span>
+                      <span>置信度 <code>0.91</code></span>
+                    </div>
+                  </div>
+                  <div class="mock-item" data-wb-comp="S2">
+                    <div class="mock-itemHead">
+                      <strong>按钮 S2</strong>
+                      <span class="mock-badge">p01</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>类型 <code>push_button</code></span>
+                      <span>置信度 <code>0.88</code></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mock-list" data-wb-tabview="warnings" hidden>
+                  <div class="mock-item">
+                    <div class="mock-itemHead">
+                      <strong>疑似重复元件</strong>
+                      <span class="mock-badge">warn</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>同页出现多个 K1 候选，建议核对。</span>
+                    </div>
+                  </div>
+                  <div class="mock-item">
+                    <div class="mock-itemHead">
+                      <strong>低置信度区域</strong>
+                      <span class="mock-badge">warn</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>FU1 置信度偏低，建议放大确认。</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mock-list" data-wb-tabview="logs">
+                  <div class="mock-note" style="font-family: var(--mono); font-size: 11px">
+                    [12:02:11] upload ok: project_A_rev03.pdf
+                    <br />
+                    [12:02:18] parse pages: 14
+                    <br />
+                    [12:02:40] detect components: running...
+                    <br />
+                    [12:03:06] preview pages: generated
+                    <br />
+                    [12:03:19] status: complete
+                  </div>
+                  <div class="mock-btnRow" style="justify-content: flex-start">
+                    <button class="mock-btn" type="button" data-action="wb-to-components">
+                      跳到元件列表
+                    </button>
+                    <button class="mock-btn" type="button" data-action="wb-to-warnings">
+                      查看告警
+                    </button>
+                  </div>
+                  <div class="mock-note">
+                    <b>说明</b>：这里仅演示布局与交互节奏，实际数据字段与现有接口保持一致。
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+
+        <main class="mock-page" data-page="search" data-state="ready">
+          <div class="diff-a-board">
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>检索条件</b>
+                  <span>关键词 / 项目 / 修订 / 模式 / 高级过滤</span>
+                </div>
+                <span class="mock-kbd">S</span>
+              </div>
+              <div class="diff-a-panelBody">
+                <div class="mock-field">
+                  <span>关键词</span>
+                  <input value="K1 辅助触点" aria-label="关键词" />
+                </div>
+                <div class="mock-field">
+                  <span>项目</span>
+                  <input value="风机控制改造" aria-label="项目" />
+                </div>
+                <div class="mock-field">
+                  <span>修订</span>
+                  <input value="Rev.03" aria-label="修订" />
+                </div>
+                <div class="mock-field">
+                  <span>检索模式</span>
+                  <select aria-label="检索模式">
+                    <option selected>hybrid</option>
+                    <option>keyword</option>
+                    <option>vector</option>
+                  </select>
+                </div>
+                <div class="mock-btnRow" aria-label="检索操作">
+                  <button class="mock-btn is-primary" type="button" data-action="se-submit">
+                    立即检索
+                  </button>
+                  <button class="mock-btn" type="button" data-action="se-clear">清空</button>
+                </div>
+                <div class="mock-note">
+                  <b>计划交互</b>：点击“立即检索”进入加载态，完成后中栏刷新结果；点击中栏某条，右栏展示预览与命中详情。
+                </div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>命中结果</b>
+                  <span>按图纸聚合 · 摘要 + 卡片列表</span>
+                </div>
+                <div class="mock-btnRow" aria-label="检索状态切换">
+                  <button class="mock-btn is-active" type="button" data-state="ready">就绪</button>
+                  <button class="mock-btn" type="button" data-state="loading">加载</button>
+                  <button class="mock-btn" type="button" data-state="empty">空态</button>
+                  <button class="mock-btn" type="button" data-state="error">异常</button>
+                </div>
+              </div>
+              <div class="diff-a-panelBody mock-views">
+                <div class="mock-empty" data-view="empty">
+                  <div>
+                    <h3>等待检索</h3>
+                    <p>输入关键词、图号或元件代号后，结果会按图纸聚合展示。</p>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="loading">
+                  <div>
+                    <h3>检索中</h3>
+                    <p>正在检索并聚合命中来源。</p>
+                    <div class="mock-skeletonGrid" aria-hidden="true">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="error">
+                  <div>
+                    <h3>连接异常</h3>
+                    <p>检索服务暂不可用，可稍后重试或切换到降级模式。</p>
+                    <div class="mock-btnRow" style="justify-content: center; margin-top: 14px">
+                      <button class="mock-btn is-primary" type="button" data-action="se-retry">
+                        重试
+                      </button>
+                      <button class="mock-btn" type="button" data-action="se-degrade">
+                        切换降级
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mock-list" data-view="ready" aria-label="检索结果列表">
+                  <div class="mock-item is-active" data-se-item="D-1028">
+                    <div class="mock-itemHead">
+                      <strong>图纸 D-1028 控制原理图</strong>
+                      <span class="mock-badge">12 命中</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>项目 <code>风机控制改造</code></span>
+                      <span>修订 <code>Rev.03</code></span>
+                      <span>来源 <code>symbol + text</code></span>
+                    </div>
+                  </div>
+                  <div class="mock-item" data-se-item="D-0991">
+                    <div class="mock-itemHead">
+                      <strong>图纸 D-0991 接线图</strong>
+                      <span class="mock-badge">4 命中</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>修订 <code>Rev.02</code></span>
+                      <span>来源 <code>vector</code></span>
+                    </div>
+                  </div>
+                  <div class="mock-item" data-se-item="D-0872">
+                    <div class="mock-itemHead">
+                      <strong>图纸 D-0872 端子排表</strong>
+                      <span class="mock-badge">2 命中</span>
+                    </div>
+                    <div class="mock-itemMeta">
+                      <span>修订 <code>Rev.01</code></span>
+                      <span>来源 <code>keyword</code></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>预览与详情</b>
+                  <span>选中某条结果后展示预览与命中片段</span>
+                </div>
+                <div class="mock-btnRow">
+                  <button class="mock-btn" type="button" data-action="se-open-modal">放大预览</button>
+                </div>
+              </div>
+              <div class="diff-a-panelBody" aria-label="检索预览与命中详情">
+                <div class="mock-note" style="display: flex; gap: 10px; align-items: center">
+                  <span class="diff-a-dot ok" aria-hidden="true"></span>
+                  <span
+                    >服务状态：<b style="color: var(--ok)">检索就绪</b> · 模式
+                    <span class="mock-badge">hybrid</span></span
+                  >
+                </div>
+                <div class="mock-canvas" style="min-height: 320px">
+                  <div class="mock-canvasHeader">
+                    <b id="sePreviewTitle">D-1028 · page 07</b>
+                    <span id="sePreviewMeta">hit 03/12 · zoom 42%</span>
+                  </div>
+                  <div class="mock-canvasBody" style="min-height: 275px">
+                    <div class="mock-pagePaper" aria-hidden="true"></div>
+                    <div
+                      class="mock-box"
+                      aria-hidden="true"
+                      style="left: 36%; top: 30%; width: 28%; height: 22%"
+                    ></div>
+                    <div class="mock-pin" aria-hidden="true" style="left: 36%; top: 30%"></div>
+                    <div class="mock-watermark" id="sePreviewWatermark">drawing_id: D-1028</div>
+                  </div>
+                </div>
+                <div class="mock-note">
+                  <b>命中摘要</b>：关键词 <span class="mock-badge">K1 辅助触点</span> 同时命中图形符号与邻近文字，建议核对该页控制回路逻辑。
+                </div>
+                <div class="mock-btnRow" style="justify-content: flex-start">
+                  <button class="mock-btn" type="button">跳转到原图</button>
+                  <button class="mock-btn" type="button">复制命中信息</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+
+        <main class="mock-page" data-page="knowledge" data-state="ready">
+          <div class="diff-a-board">
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>目录与筛选</b>
+                  <span>组件 / 规则切换 · 搜索 · 启用状态</span>
+                </div>
+                <span class="mock-kbd">K</span>
+              </div>
+              <div class="diff-a-panelBody">
+                <div class="mock-btnRow" style="justify-content: flex-start">
+                  <button class="mock-btn is-active" type="button" data-kg-kind="component">
+                    组件
+                  </button>
+                  <button class="mock-btn" type="button" data-kg-kind="rule">规则</button>
+                  <button class="mock-btn is-primary" type="button" data-action="kg-create">
+                    新建
+                  </button>
+                </div>
+                <div class="mock-field">
+                  <span>搜索</span>
+                  <input value="contactor" aria-label="知识库搜索" />
+                </div>
+                <div class="mock-list" aria-label="知识库目录列表" id="kgList"></div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b id="kgEditorTitle">组件详情</b>
+                  <span id="kgEditorSubtitle">编辑器：基础信息 / 别名 / 标准 / 图片 / 备注</span>
+                </div>
+                <div class="mock-btnRow" aria-label="知识库状态切换">
+                  <button class="mock-btn is-active" type="button" data-state="ready">就绪</button>
+                  <button class="mock-btn" type="button" data-state="loading">加载</button>
+                  <button class="mock-btn" type="button" data-state="empty">空态</button>
+                  <button class="mock-btn" type="button" data-state="error">异常</button>
+                </div>
+              </div>
+              <div class="diff-a-panelBody mock-views" aria-label="知识库编辑器">
+                <div class="mock-empty" data-view="empty">
+                  <div>
+                    <h3>请选择一条记录</h3>
+                    <p>左侧选择组件或规则后，中间进入编辑器。</p>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="loading">
+                  <div>
+                    <h3>加载中</h3>
+                    <p>正在拉取详情与关联图片信息。</p>
+                    <div class="mock-skeletonGrid" aria-hidden="true">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mock-loading" data-view="error">
+                  <div>
+                    <h3>加载失败</h3>
+                    <p>请检查后端服务与权限配置。</p>
+                    <div class="mock-btnRow" style="justify-content: center; margin-top: 14px">
+                      <button class="mock-btn is-primary" type="button" data-action="kg-retry">
+                        重试
+                      </button>
+                      <button class="mock-btn" type="button" data-action="kg-back">
+                        返回目录
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div data-view="ready" style="display: grid; gap: 12px">
+                  <div class="mock-note" id="kgEditorHint">
+                    <b>计划交互</b>：左侧选中条目后，右侧可直接“校验/试运行”，结果与日志在右栏展示；保存提示保持克制（灰色）。
+                  </div>
+                  <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr">
+                    <div class="mock-field">
+                      <span>ID</span>
+                      <input id="kgFieldId" value="COMP-CT-001" aria-label="ID" />
+                    </div>
+                    <div class="mock-field">
+                      <span>名称</span>
+                      <input id="kgFieldName" value="接触器" aria-label="名称" />
+                    </div>
+                    <div class="mock-field" style="grid-column: 1 / -1">
+                      <span>定义</span>
+                      <input
+                        id="kgFieldDef"
+                        value="用于电机控制回路的主触点与辅助触点组合"
+                        aria-label="定义"
+                      />
+                    </div>
+                    <div class="mock-field">
+                      <span>类型</span>
+                      <select id="kgFieldType" aria-label="类型">
+                        <option selected>contactor</option>
+                        <option>relay</option>
+                        <option>terminal</option>
+                      </select>
+                    </div>
+                    <div class="mock-field">
+                      <span>启用</span>
+                      <select id="kgFieldEnabled" aria-label="启用">
+                        <option selected>true</option>
+                        <option>false</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mock-btnRow" style="justify-content: flex-start">
+                    <button class="mock-btn is-primary" type="button" data-action="kg-save">
+                      保存
+                    </button>
+                    <button class="mock-btn" type="button" data-action="kg-validate">校验</button>
+                    <button class="mock-btn" type="button" data-action="kg-test">试运行</button>
+                    <button class="mock-btn is-danger" type="button" data-action="kg-delete">
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="diff-a-panel">
+              <div class="diff-a-panelHeader">
+                <div class="diff-a-h">
+                  <b>预览与运行</b>
+                  <span>图片预览 · 校验结果 · 运行日志</span>
+                </div>
+                <div class="diff-a-pill">
+                  <span class="diff-a-dot ok" aria-hidden="true"></span>
+                  <span>提示</span>
+                  <b id="kgMsg">无消息</b>
+                </div>
+              </div>
+              <div class="diff-a-panelBody" aria-label="知识库预览与运行">
+                <div class="mock-canvas" style="min-height: 280px">
+                  <div class="mock-canvasHeader">
+                    <b id="kgPreviewTitle">接触器 · 标准图像</b>
+                    <span id="kgPreviewMeta">variants 3 · zoom 58%</span>
+                  </div>
+                  <div class="mock-canvasBody" style="min-height: 235px">
+                    <div class="mock-pagePaper" aria-hidden="true"></div>
+                    <div
+                      class="mock-box"
+                      aria-hidden="true"
+                      style="left: 24%; top: 28%; width: 52%; height: 42%"
+                    ></div>
+                    <div class="mock-watermark" id="kgPreviewWatermark">component_id: COMP-CT-001</div>
+                  </div>
+                </div>
+                <div class="mock-note" id="kgRunResult">
+                  <b>运行结果</b>：尚未执行校验/试运行。点击中栏按钮后，这里展示通过/失败与关键日志。
+                </div>
+                <div class="mock-note" style="font-family: var(--mono); font-size: 11px" id="kgRunLog">
+                  [--:--:--] waiting...
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="mock-modal" id="mockModal" aria-hidden="true">
+      <div class="mock-modalCard" role="dialog" aria-modal="true" aria-label="放大预览">
+        <div class="mock-modalHead">
+          <div class="diff-a-h">
+            <b>放大预览</b>
+            <span class="mock-modalHint">用于评审：可保持 modal 仅用于“放大查看”，默认走右栏预览。</span>
+          </div>
+          <button class="mock-modalClose" type="button" data-action="modal-close">关闭</button>
+        </div>
+        <div class="mock-modalBody">
+          <div class="mock-canvas" style="height: 100%; min-height: 520px">
+            <div class="mock-canvasHeader">
+              <b id="modalTitle">D-1028 · page 07</b>
+              <span id="modalMeta">zoom 88% · overlay on</span>
+            </div>
+            <div class="mock-canvasBody" style="min-height: 475px">
+              <div class="mock-pagePaper" aria-hidden="true"></div>
+              <div
+                class="mock-box"
+                aria-hidden="true"
+                style="left: 34%; top: 26%; width: 36%; height: 28%; border-width: 4px"
+              ></div>
+              <div class="mock-pin" aria-hidden="true" style="left: 34%; top: 26%"></div>
+              <div class="mock-watermark">mock: zoomed preview</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const PAGE_META = {
+        workbench: {
+          title: 'WORKBENCH',
+          subtitle:
+            '识别任务驱动型工作台：左侧提交与配置，中间预览定位，右侧核对与日志',
+        },
+        search: {
+          title: 'SEARCH',
+          subtitle:
+            '检索工作流：左侧筛选，中间命中列表，右侧预览与命中详情（modal 仅用于放大）',
+        },
+        knowledge: {
+          title: 'KNOWLEDGE',
+          subtitle:
+            '知识库工作流：左侧目录筛选，中间编辑器，右侧预览与校验/试运行结果',
+        },
+      }
+
+      const stateLabel = document.getElementById('mockStateLabel')
+      const titleEl = document.getElementById('mockTitle')
+      const subtitleEl = document.getElementById('mockSubtitle')
+
+      const pageButtons = Array.from(document.querySelectorAll('[data-page-link]'))
+      const pages = Array.from(document.querySelectorAll('.mock-page[data-page]'))
+
+      let activePage = 'workbench'
+      const pageStates = {
+        workbench: 'ready',
+        search: 'ready',
+        knowledge: 'ready',
+      }
+
+      function setPageState(pageKey, state) {
+        pageStates[pageKey] = state
+        const pageEl = pages.find((el) => el.dataset.page === pageKey)
+        if (!pageEl) return
+        pageEl.dataset.state = state
+        if (pageKey === activePage) syncTopbarState()
+      }
+
+      function syncTopbarState() {
+        const state = pageStates[activePage] || 'ready'
+        stateLabel.textContent =
+          state === 'ready' ? '就绪' : state === 'loading' ? '加载中' : state === 'empty' ? '空态' : '异常'
+      }
+
+      function setActivePage(pageKey) {
+        activePage = pageKey
+        pageButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.pageLink === pageKey))
+        pages.forEach((page) => page.classList.toggle('is-active', page.dataset.page === pageKey))
+        const meta = PAGE_META[pageKey]
+        if (meta) {
+          titleEl.textContent = meta.title
+          subtitleEl.textContent = meta.subtitle
+        }
+        syncTopbarState()
+      }
+
+      pageButtons.forEach((btn) => {
+        btn.addEventListener('click', () => setActivePage(btn.dataset.pageLink))
+      })
+
+      document.addEventListener('click', (e) => {
+        const target = e.target
+        if (!(target instanceof HTMLElement)) return
+
+        const state = target.getAttribute('data-state')
+        if (state) {
+          const pageEl = pages.find((el) => el.classList.contains('is-active'))
+          if (!pageEl) return
+          setPageState(pageEl.dataset.page, state)
+          const row = target.parentElement
+          if (row) {
+            Array.from(row.querySelectorAll('[data-state]')).forEach((btn) =>
+              btn.classList.toggle('is-active', btn === target),
+            )
+          }
+          return
+        }
+      })
+
+      const wbTabButtons = Array.from(document.querySelectorAll('[data-wb-tab]'))
+      const wbTabViews = Array.from(document.querySelectorAll('[data-wb-tabview]'))
+
+      function setWbTab(tabKey) {
+        wbTabButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.wbTab === tabKey))
+        wbTabViews.forEach((view) => {
+          const on = view.getAttribute('data-wb-tabview') === tabKey
+          view.toggleAttribute('hidden', !on)
+        })
+      }
+
+      wbTabButtons.forEach((btn) => btn.addEventListener('click', () => setWbTab(btn.dataset.wbTab)))
+
+      const wbFocusBox = document.querySelector('[data-wb-focus-box]')
+      const wbCompBoxes = {
+        K1: { left: '52%', top: '28%', width: '24%', height: '18%' },
+        FU1: { left: '18%', top: '20%', width: '22%', height: '16%' },
+        S2: { left: '28%', top: '54%', width: '36%', height: '22%' },
+      }
+
+      function focusWorkbenchComponent(id) {
+        const box = wbCompBoxes[id]
+        if (wbFocusBox && box) {
+          wbFocusBox.style.left = box.left
+          wbFocusBox.style.top = box.top
+          wbFocusBox.style.width = box.width
+          wbFocusBox.style.height = box.height
+        }
+      }
+
+      document.querySelectorAll('[data-wb-comp]').forEach((el) => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('[data-wb-comp]').forEach((n) => n.classList.remove('is-active'))
+          el.classList.add('is-active')
+          focusWorkbenchComponent(el.getAttribute('data-wb-comp'))
+        })
+      })
+
+      document.querySelectorAll('[data-action="wb-to-components"]').forEach((btn) => {
+        btn.addEventListener('click', () => setWbTab('components'))
+      })
+      document.querySelectorAll('[data-action="wb-to-warnings"]').forEach((btn) => {
+        btn.addEventListener('click', () => setWbTab('warnings'))
+      })
+      document.querySelectorAll('[data-action="wb-open-log"]').forEach((btn) => {
+        btn.addEventListener('click', () => setWbTab('logs'))
+      })
+      document.querySelectorAll('[data-action="wb-submit"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('workbench', 'loading'))
+      })
+      document.querySelectorAll('[data-action="wb-retry"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('workbench', 'loading'))
+      })
+      document.querySelectorAll('[data-action="wb-reset"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setPageState('workbench', 'empty')
+          setWbTab('logs')
+        })
+      })
+
+      const sePreviewTitle = document.getElementById('sePreviewTitle')
+      const sePreviewMeta = document.getElementById('sePreviewMeta')
+      const sePreviewWatermark = document.getElementById('sePreviewWatermark')
+      const seItems = Array.from(document.querySelectorAll('[data-se-item]'))
+
+      const seMap = {
+        'D-1028': { page: '07', hits: '03/12', mode: 'hybrid' },
+        'D-0991': { page: '03', hits: '01/04', mode: 'vector' },
+        'D-0872': { page: '02', hits: '01/02', mode: 'keyword' },
+      }
+      function setSearchActive(id) {
+        seItems.forEach((el) => el.classList.toggle('is-active', el.getAttribute('data-se-item') === id))
+        const meta = seMap[id]
+        if (!meta) return
+        sePreviewTitle.textContent = `${id} · page ${meta.page}`
+        sePreviewMeta.textContent = `hit ${meta.hits} · zoom 42%`
+        sePreviewWatermark.textContent = `drawing_id: ${id}`
+        const modalTitle = document.getElementById('modalTitle')
+        const modalMeta = document.getElementById('modalMeta')
+        if (modalTitle) modalTitle.textContent = `${id} · page ${meta.page}`
+        if (modalMeta) modalMeta.textContent = `zoom 88% · overlay on`
+      }
+      seItems.forEach((el) =>
+        el.addEventListener('click', () => setSearchActive(el.getAttribute('data-se-item'))),
+      )
+
+      document.querySelectorAll('[data-action="se-submit"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('search', 'loading'))
+      })
+      document.querySelectorAll('[data-action="se-retry"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('search', 'loading'))
+      })
+      document.querySelectorAll('[data-action="se-clear"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('search', 'empty'))
+      })
+      document.querySelectorAll('[data-action="se-degrade"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('search', 'ready'))
+      })
+
+      const modal = document.getElementById('mockModal')
+      function openModal() {
+        if (!modal) return
+        modal.classList.add('is-open')
+        modal.setAttribute('aria-hidden', 'false')
+      }
+      function closeModal() {
+        if (!modal) return
+        modal.classList.remove('is-open')
+        modal.setAttribute('aria-hidden', 'true')
+      }
+
+      document.querySelectorAll('[data-action="se-open-modal"]').forEach((btn) => {
+        btn.addEventListener('click', openModal)
+      })
+      document.querySelectorAll('[data-action="modal-close"]').forEach((btn) => {
+        btn.addEventListener('click', closeModal)
+      })
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal()
+        })
+      }
+
+      const kgList = document.getElementById('kgList')
+      const kgMsg = document.getElementById('kgMsg')
+      const kgRunResult = document.getElementById('kgRunResult')
+      const kgRunLog = document.getElementById('kgRunLog')
+      const kgEditorTitle = document.getElementById('kgEditorTitle')
+      const kgPreviewTitle = document.getElementById('kgPreviewTitle')
+      const kgPreviewWatermark = document.getElementById('kgPreviewWatermark')
+
+      let kgKind = 'component'
+      let kgSelectedId = 'COMP-CT-001'
+      const kgData = {
+        component: [
+          {
+            id: 'COMP-CT-001',
+            name: '接触器',
+            type: 'contactor',
+            enabled: true,
+            def: '用于电机控制回路的主触点与辅助触点组合',
+          },
+          { id: 'COMP-FU-010', name: '熔断器', type: 'fuse', enabled: true, def: '短路保护器件' },
+          { id: 'COMP-TB-003', name: '端子', type: 'terminal', enabled: false, def: '用于连接导线' },
+        ],
+        rule: [
+          {
+            id: 'RULE-K1-AUX',
+            name: 'K1 辅助触点一致性',
+            scope: 'same_page',
+            enabled: true,
+            def: '校验线圈与辅助触点在同页关联关系',
+          },
+          {
+            id: 'RULE-FU-PROT',
+            name: '熔断器保护链路',
+            scope: 'same_page',
+            enabled: true,
+            def: '校验 FU 与受保护元件的链路关系',
+          },
+        ],
+      }
+
+      function renderKnowledgeList() {
+        if (!kgList) return
+        kgList.innerHTML = ''
+        const items = kgData[kgKind] || []
+        items.forEach((item) => {
+          const el = document.createElement('div')
+          el.className = 'mock-item' + (item.id === kgSelectedId ? ' is-active' : '')
+          el.setAttribute('data-kg-item', item.id)
+          const right = kgKind === 'component' ? item.type : item.scope
+          const enabled = item.enabled ? 'enabled' : 'disabled'
+          el.innerHTML = `
+            <div class="mock-itemHead">
+              <strong>${item.name}</strong>
+              <span class="mock-badge">${right}</span>
+            </div>
+            <div class="mock-itemMeta">
+              <span><code>${item.id}</code></span>
+              <span>${enabled}</span>
+            </div>
+          `
+          el.addEventListener('click', () => selectKnowledge(item.id))
+          kgList.appendChild(el)
+        })
+      }
+
+      function selectKnowledge(id) {
+        kgSelectedId = id
+        renderKnowledgeList()
+        const item = (kgData[kgKind] || []).find((x) => x.id === id)
+        if (!item) return
+        setPageState('knowledge', 'loading')
+        window.setTimeout(() => {
+          setPageState('knowledge', 'ready')
+          if (kgEditorTitle) kgEditorTitle.textContent = kgKind === 'component' ? '组件详情' : '规则详情'
+          const idField = document.getElementById('kgFieldId')
+          const nameField = document.getElementById('kgFieldName')
+          const defField = document.getElementById('kgFieldDef')
+          const typeField = document.getElementById('kgFieldType')
+          const enabledField = document.getElementById('kgFieldEnabled')
+          if (idField) idField.value = item.id
+          if (nameField) nameField.value = item.name
+          if (defField) defField.value = item.def
+          if (typeField && kgKind === 'component') typeField.value = item.type
+          if (enabledField) enabledField.value = item.enabled ? 'true' : 'false'
+
+          if (kgPreviewTitle) kgPreviewTitle.textContent = `${item.name} · ${kgKind === 'component' ? '标准图像' : '规则示意'}`
+          if (kgPreviewWatermark) kgPreviewWatermark.textContent = `${kgKind}_id: ${item.id}`
+          if (kgMsg) kgMsg.textContent = '无消息'
+          if (kgRunResult) kgRunResult.innerHTML = '<b>运行结果</b>：尚未执行校验/试运行。'
+          if (kgRunLog) kgRunLog.textContent = '[--:--:--] waiting...'
+        }, 360)
+      }
+
+      document.querySelectorAll('[data-kg-kind]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.getAttribute('data-kg-kind')
+          if (!next) return
+          document.querySelectorAll('[data-kg-kind]').forEach((b) => b.classList.toggle('is-active', b === btn))
+          kgKind = next
+          kgSelectedId = (kgData[kgKind] || [])[0]?.id || ''
+          renderKnowledgeList()
+          if (kgSelectedId) selectKnowledge(kgSelectedId)
+        })
+      })
+
+      document.querySelectorAll('[data-action="kg-save"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (kgMsg) kgMsg.textContent = '已保存（提示灰）'
+        })
+      })
+      document.querySelectorAll('[data-action="kg-validate"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (kgMsg) kgMsg.textContent = '校验通过'
+          if (kgRunResult) kgRunResult.innerHTML = '<b>运行结果</b>：校验通过 · 结构一致 · 字段完整'
+          if (kgRunLog)
+            kgRunLog.textContent =
+              '[12:10:01] validate: start\n[12:10:02] schema ok\n[12:10:03] success'
+        })
+      })
+      document.querySelectorAll('[data-action="kg-test"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (kgMsg) kgMsg.textContent = '试运行完成'
+          if (kgRunResult) kgRunResult.innerHTML = '<b>运行结果</b>：试运行完成 · 命中 3 · 未发现冲突'
+          if (kgRunLog)
+            kgRunLog.textContent =
+              '[12:10:21] test: start\n[12:10:22] candidates: 12\n[12:10:24] hits: 3\n[12:10:25] done'
+        })
+      })
+      document.querySelectorAll('[data-action="kg-delete"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (kgMsg) kgMsg.textContent = '已删除（草图）'
+          setPageState('knowledge', 'empty')
+        })
+      })
+      document.querySelectorAll('[data-action="kg-create"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (kgMsg) kgMsg.textContent = '新建草稿'
+          setPageState('knowledge', 'ready')
+          const idField = document.getElementById('kgFieldId')
+          const nameField = document.getElementById('kgFieldName')
+          const defField = document.getElementById('kgFieldDef')
+          if (idField) idField.value = ''
+          if (nameField) nameField.value = ''
+          if (defField) defField.value = ''
+          if (kgRunResult) kgRunResult.innerHTML = '<b>运行结果</b>：新建草稿尚未保存。'
+          if (kgRunLog) kgRunLog.textContent = '[--:--:--] draft created'
+        })
+      })
+      document.querySelectorAll('[data-action="kg-retry"]').forEach((btn) => {
+        btn.addEventListener('click', () => selectKnowledge(kgSelectedId))
+      })
+      document.querySelectorAll('[data-action="kg-back"]').forEach((btn) => {
+        btn.addEventListener('click', () => setPageState('knowledge', 'empty'))
+      })
+
+      setActivePage('workbench')
+      setWbTab('logs')
+      focusWorkbenchComponent('K1')
+      setSearchActive('D-1028')
+      renderKnowledgeList()
+      selectKnowledge('COMP-CT-001')
+    </script>
+  </body>
+</html>

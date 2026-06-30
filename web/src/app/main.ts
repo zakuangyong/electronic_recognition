@@ -5,6 +5,7 @@ import { RouterView } from 'vue-router'
 import { createAppRouter } from './router'
 import './styles/tokens.css'
 import './styles/base.css'
+import './styles/styles.css'
 
 const app = createApp({
   name: 'ElectronicRecognitionApp',

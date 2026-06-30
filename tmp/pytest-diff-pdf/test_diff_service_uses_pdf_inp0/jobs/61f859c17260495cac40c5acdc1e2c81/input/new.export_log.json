@@ -1,0 +1,7 @@
+{
+  "source": "D:\\project\\electronic_recognition\\tmp\\pytest-diff-pdf\\test_diff_service_uses_pdf_inp0\\jobs\\61f859c17260495cac40c5acdc1e2c81\\input\\after.pdf",
+  "output": "D:\\project\\electronic_recognition\\tmp\\pytest-diff-pdf\\test_diff_service_uses_pdf_inp0\\jobs\\61f859c17260495cac40c5acdc1e2c81\\input\\new.pdf",
+  "tool": "direct_pdf",
+  "success": true,
+  "error": null
+}

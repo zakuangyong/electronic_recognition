@@ -1,0 +1,21 @@
+{
+  "old_source": "old.pdf",
+  "new_source": "new.pdf",
+  "old_pdf": "old.pdf",
+  "new_pdf": "new.pdf",
+  "generated_at": "2026-06-29T11:00:04.269249",
+  "total_pages": 1,
+  "total_regions": 0,
+  "text_extracted_regions": 0,
+  "pages": [
+    {
+      "page": 1,
+      "offset_px": [
+        0,
+        0
+      ],
+      "region_count": 0,
+      "regions": []
+    }
+  ]
+}

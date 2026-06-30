@@ -1,0 +1,1 @@
+{"total_pages": 1, "total_regions": 1, "pages": [{"page": 1, "regions": [{"region_id": 1, "bbox_px": [1, 2, 3, 4], "change_type": "visual_change", "old_text": "", "new_text": "KM1", "new_crop": "D:\\project\\electronic_recognition\\tmp\\pytest-pdf-full\\test_diff_compare_api_accepts_0\\jobs\\0677abddc96c46409efeb1127699f8b2\\work\\diff\\crops\\page_001_region_001_new.png"}]}]}

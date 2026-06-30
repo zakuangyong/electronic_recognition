@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C 方案调整版 - 紧凑分析屏</title>
+  <style>
+    :root {
+      --bg: #eef2f5;
+      --surface: rgba(255,255,255,0.92);
+      --surface-soft: rgba(247,249,252,0.95);
+      --line: #d8e0e8;
+      --line-strong: #c4d0dc;
+      --text: #243648;
+      --muted: #6d8093;
+      --accent: #255ecb;
+      --accent-soft: rgba(37, 94, 203, 0.09);
+      --warn: #bf7a22;
+      --shadow: 0 16px 38px rgba(26, 47, 74, 0.07);
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 11px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(37,94,203,0.05), transparent 18%),
+        linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.86)),
+        var(--bg);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 22px;
+      border-bottom: 1px solid rgba(216,224,232,0.92);
+      backdrop-filter: blur(14px);
+      background: rgba(238,242,245,0.9);
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .topbar p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chip {
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(255,255,255,0.92);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .wrap {
+      width: min(1540px, calc(100vw - 24px));
+      margin: 16px auto 40px;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .hero, .notes {
+      background: rgba(255,255,255,0.84);
+      border: 1px solid rgba(216,224,232,0.96);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+    }
+    .hero h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+    .hero p, .notes li {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .tag {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .screen {
+      background: rgba(248,250,252,0.84);
+      border: 1px solid rgba(216,224,232,0.96);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .screen-header {
+      padding: 14px 18px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,248,251,0.92));
+    }
+    .eyebrow {
+      margin: 0 0 4px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #76899c;
+      font-weight: 700;
+    }
+    .screen-header h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+    .screen-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.55;
+      font-size: 12px;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .meta span {
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.96);
+      color: #526b82;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .canvas {
+      padding: 12px;
+      min-height: 620px;
+    }
+    .analysis-shell {
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      gap: 10px;
+      min-height: 584px;
+    }
+    .toolbar, .board, .panel, .result-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.74);
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 8px;
+    }
+    .toolbar-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control, .button, .field-inline {
+      height: 32px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.98);
+      color: #586f84;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 11px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .board {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 280px;
+      gap: 10px;
+    }
+    .panel {
+      padding: 10px;
+      background: var(--surface-soft);
+    }
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .panel-title b {
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #778a9d;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .facet, .tree-item, .metric, .detail-row, .result-card, .preview-box, .field {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.98);
+    }
+    .tree-item, .facet {
+      padding: 9px 10px;
+      margin-bottom: 8px;
+      color: #586f84;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .tree-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(37,94,203,0.22);
+      color: var(--accent);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .metric {
+      padding: 9px 10px;
+      min-height: 66px;
+    }
+    .metric span {
+      display: block;
+      font-size: 11px;
+      color: #6f8396;
+      line-height: 1.2;
+    }
+    .metric b {
+      display: block;
+      margin-top: 5px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .dense-grid {
+      display: grid;
+      grid-template-columns: 1.16fr 0.84fr;
+      gap: 8px;
+    }
+    .result-card {
+      padding: 11px 12px;
+      margin-bottom: 8px;
+    }
+    .result-card h4 {
+      margin: 0 0 5px;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .result-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 12px;
+    }
+    .badge-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .badge {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(37,94,203,0.09);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .preview-box {
+      min-height: 192px;
+      background:
+        radial-gradient(circle at top right, rgba(37,94,203,0.08), transparent 28%),
+        linear-gradient(90deg, rgba(90,124,160,0.07) 1px, transparent 1px),
+        linear-gradient(rgba(90,124,160,0.07) 1px, transparent 1px),
+        #fff;
+      background-size: auto, 20px 20px, 20px 20px, auto;
+    }
+    .detail-row {
+      padding: 9px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      color: #586f84;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .field {
+      padding: 10px 11px;
+      min-height: 38px;
+      color: #7b8d9f;
+      margin-bottom: 8px;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+    .field.tall {
+      min-height: 122px;
+    }
+    .warn {
+      color: var(--warn);
+    }
+    ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>C 方案调整版 · 紧凑分析屏</h1>
+      <p>压缩文字、标签、输入框和按钮尺寸，让主要结果区和图纸预览重新成为视觉主体。</p>
+    </div>
+    <div>
+      <div class="chips">
+        <a class="chip" href="/files/option-c-full.html">C 原版</a>
+        <a class="chip active" href="/files/option-c-refined.html">C 调整版</a>
+      </div>
+      <p style="text-align:right;margin-top:6px;">保留高密度分析台方向，只收紧占版。</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="intro">
+      <div class="hero">
+        <h2>更克制的 C 方案</h2>
+        <p>这版不改变 `C` 的分析型骨架，而是系统性压缩“壳层噪音”：顶栏、区块标题、输入框、按钮、状态标签和统计卡都做了小一号处理，让中间的结果列表、图纸预览和主编辑区真正成为第一视觉焦点。</p>
+        <div class="tags">
+          <span class="tag">标题降级</span>
+          <span class="tag">控件压缩</span>
+          <span class="tag">主体优先</span>
+          <span class="tag">保留专业感</span>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="label" style="margin-bottom:8px;">本轮调整点</div>
+        <ul>
+          <li>所有顶栏、区块头、元信息标签统一缩小，避免“壳子比内容更抢眼”。</li>
+          <li>输入、按钮、筛选项改为低高度紧凑控件，减少空白消耗。</li>
+          <li>中间主画布、结果区、预览区获得更多视觉权重。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Workbench</p>
+          <h3>识别工作台</h3>
+          <p>工作台直接围绕识别 pipeline 组织：输入图纸、执行识别、查看预览和结果摘要，不再额外引入监控和诊断概念层。</p>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">批次 ER-20260625-018</div>
+              <div class="control">输入 本地文件</div>
+              <div class="control">DPI 220</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">开始识别</div>
+              <div class="button">异常复核</div>
+              <div class="button">导出</div>
+            </div>
+          </div>
+          <div class="board" style="grid-template-columns:minmax(0, 1fr);">
+            <main>
+              <div class="metric-grid">
+                <div class="metric"><span>总页数</span><b>38</b></div>
+                <div class="metric"><span>检测元件</span><b>168</b></div>
+                <div class="metric"><span>规则命中</span><b>12</b></div>
+                <div class="metric"><span>异常告警</span><b class="warn">4</b></div>
+              </div>
+              <div class="dense-grid">
+                <section class="panel">
+                  <div class="panel-title"><b>图纸预览</b><span class="label">主画布</span></div>
+                  <div class="preview-box" style="min-height:352px;"></div>
+                </section>
+                <section class="panel">
+                  <div class="panel-title"><b>结果摘要</b><span class="label">结构视图</span></div>
+                  <div class="detail-row"><span>标题栏字段</span><b>9 / 10</b></div>
+                  <div class="detail-row"><span>检测组件</span><b>168</b></div>
+                  <div class="detail-row"><span>开放符号</span><b>23</b></div>
+                  <div class="detail-row"><span>建议复核</span><b class="warn">4</b></div>
+                  <div class="result-card">
+                    <h4>当前任务摘要</h4>
+                    <p>当前批次已完成图像解析与结构识别，结果区聚焦元件、规则与待复核项，直接承接后续结果确认动作。</p>
+                  </div>
+                </section>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Knowledge</p>
+          <h3>知识库管理</h3>
+          <p>知识库管理直接贴合维护流程：筛选对象、编辑规则、查看图样对照和试运行结果，不再附加额外诊断面板。</p>
+        </div>
+        <div class="meta">
+          <span>组件 842</span>
+          <span>规则 96</span>
+          <span>试运行在线</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">对象类型 规则</div>
+              <div class="control">scope same_page</div>
+              <div class="control">confidence 0.95+</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">保存规则</div>
+              <div class="button">试运行</div>
+              <div class="button">版本对比</div>
+            </div>
+          </div>
+          <div class="board" style="grid-template-columns:220px minmax(0, 1fr);">
+            <aside class="panel">
+              <div class="panel-title"><b>目录树</b><span class="label">Facet</span></div>
+              <div class="field">按名称、别名、型号搜索</div>
+              <div class="facet">单元件 842</div>
+              <div class="facet">组合规则 96</div>
+              <div class="tree-item active">电机启动保护组合</div>
+              <div class="tree-item">接触器自锁回路</div>
+              <div class="tree-item">指示灯控制回路</div>
+            </aside>
+            <main>
+              <div class="dense-grid">
+                <section class="panel">
+                  <div class="panel-title"><b>规则编辑器</b><span class="label">主编辑区</span></div>
+                  <div class="field">规则名称 / 规则 ID</div>
+                  <div class="field">成员元件 / 匹配范围 / 阈值</div>
+                  <div class="field tall">规则说明、别名、排除条件、推理提示、图像约束……</div>
+                </section>
+                <section class="panel">
+                  <div class="panel-title"><b>素材对照</b><span class="label">图样</span></div>
+                  <div class="preview-box" style="min-height:286px;"></div>
+                </section>
+              </div>
+              <section class="panel" style="margin-top:8px;">
+                <div class="panel-title"><b>试运行结果</b><span class="label">命中样本</span></div>
+                <div class="result-card">
+                  <h4>样本 A · 命中成功</h4>
+                  <p>热继电器、接触器、停止按钮在同页闭环出现，满足规则约束。</p>
+                </div>
+                <div class="result-card">
+                  <h4>样本 B · 需要复核</h4>
+                  <p>辅助触点位置存在歧义，建议查看变体图与相邻区域。</p>
+                </div>
+              </section>
+            </main>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-header">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h3>图纸检索</h3>
+          <p>图纸检索直接围绕“输入检索条件并查看结果”展开，不再拆出额外的详情解释和调试侧栏。</p>
+        </div>
+        <div class="meta">
+          <span>Hybrid 在线</span>
+          <span>总命中 126</span>
+          <span>降级 无</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="analysis-shell">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <div class="control">Query 电机启动保护回路</div>
+              <div class="control">Mode hybrid</div>
+              <div class="control">Revision latest</div>
+            </div>
+            <div class="toolbar-group">
+              <div class="button primary">开始检索</div>
+              <div class="button">重建索引</div>
+              <div class="button">保存查询</div>
+            </div>
+          </div>
+          <div class="board" style="grid-template-columns:220px minmax(0, 1fr);">
+            <aside class="panel">
+              <div class="panel-title"><b>检索条件</b><span class="label">Query</span></div>
+              <div class="field">项目名称过滤</div>
+              <div class="field">页码 / 修订号 / 图纸类别</div>
+              <div class="facet">高相关结果 17</div>
+              <div class="facet">项目 A 42</div>
+              <div class="facet">项目 B 31</div>
+              <div class="tree-item active">调试视图已开启</div>
+            </aside>
+            <main>
+              <div class="metric-grid">
+                <div class="metric"><span>总命中</span><b>126</b></div>
+                <div class="metric"><span>高相关</span><b>17</b></div>
+                <div class="metric"><span>首项分数</span><b>0.92</b></div>
+                <div class="metric"><span>降级次数</span><b>0</b></div>
+              </div>
+              <section class="panel">
+                <div class="panel-title"><b>结果列表</b><span class="label">主结果区</span></div>
+                <div class="result-card">
+                  <h4>线路图 03 · 电机启动保护回路</h4>
+                  <p>融合文本召回、结构召回和别名扩展词，命中热继电器 + 接触器 + 停止按钮组合。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.92</span>
+                    <span class="badge">bm25 0.86</span>
+                    <span class="badge">vector 0.95</span>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <h4>配电柜图纸 B12 · 接触器自锁</h4>
+                  <p>结构匹配良好，文本相关度次高，适合作为第二候选。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.88</span>
+                    <span class="badge">fusion</span>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <h4>工位驱动图纸 C07 · 指示灯控制回路</h4>
+                  <p>基于规则别名扩展召回，适合作为近似案例。</p>
+                  <div class="badge-row">
+                    <span class="badge">score 0.81</span>
+                    <span class="badge">alias expansion</span>
+                  </div>
+                </div>
+              </section>
+            </main>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

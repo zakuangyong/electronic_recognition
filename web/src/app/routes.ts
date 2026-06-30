@@ -5,6 +5,7 @@ export const appRouteRecords: RouteRecordRaw[] = [
   { path: '/results/:resultId', component: () => import('../views/ResultView.vue') },
   { path: '/knowledge', component: () => import('../views/KnowledgeView.vue') },
   { path: '/search', component: () => import('../views/SearchView.vue') },
+  { path: '/drawing-diff', component: () => import('../views/DrawingDiffView.vue') },
 ]
 
 export const appRoutePaths = appRouteRecords.map((route) => route.path)

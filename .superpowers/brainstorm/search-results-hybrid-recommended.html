@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图纸检索结果列表推荐草图</title>
+  <style>
+    :root {
+      --bg: #eef3f9;
+      --panel: #ffffff;
+      --line: #d8e1ea;
+      --line-strong: #cad6e2;
+      --text: #17344e;
+      --muted: #6b7f92;
+      --blue: #2f6fed;
+      --blue-soft: #eef4ff;
+      --green: #0f6c59;
+      --green-soft: #eaf7f2;
+      --purple: #6d52c6;
+      --purple-soft: #f2eeff;
+      --shadow: 0 18px 44px rgba(16, 34, 53, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(47,111,237,.08), transparent 28%),
+        linear-gradient(180deg, #f4f7fb 0%, #edf2f8 100%);
+    }
+
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 28px 40px;
+    }
+
+    .intro {
+      margin-bottom: 18px;
+      padding: 20px 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow);
+    }
+
+    .intro h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    .intro p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .board {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e7edf4;
+      background: linear-gradient(180deg, rgba(245,248,253,.95), rgba(255,255,255,.95));
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .query-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: white;
+      color: #48637d;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.primary {
+      border-color: #c8d8fb;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .subbar {
+      padding: 12px 18px;
+      border-bottom: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #fcfdff;
+    }
+
+    .filters,
+    .sorts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: #f2f5f9;
+      color: #47627c;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip.active {
+      background: #eaf1ff;
+      color: #215fdb;
+    }
+
+    .list {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      background: linear-gradient(180deg, #fbfcfe 0%, #f5f8fc 100%);
+    }
+
+    .card {
+      border: 1px solid #dde6ef;
+      border-radius: 18px;
+      background: white;
+      overflow: hidden;
+    }
+
+    .card-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 158px;
+      gap: 0;
+    }
+
+    .content {
+      padding: 16px 18px;
+    }
+
+    .card-top {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .rank {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: #eff3f8;
+      display: grid;
+      place-items: center;
+      color: #4c667f;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .title {
+      margin: 0 0 4px;
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .score {
+      min-width: 86px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #bedbce;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .snippet {
+      margin-top: 12px;
+      color: #3f566f;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .why {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cfe0ff;
+      border-radius: 12px;
+      background: #f7faff;
+      color: #3c5876;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .tag.blue {
+      color: #145c96;
+      background: #edf6fc;
+      border-color: #c7def7;
+    }
+
+    .tag.green {
+      color: #0f6c59;
+      background: #edf8f4;
+      border-color: #bde5d8;
+    }
+
+    .tag.purple {
+      color: var(--purple);
+      background: var(--purple-soft);
+      border-color: #d8cefa;
+    }
+
+    .footer {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .actions {
+      border-left: 1px solid #edf2f7;
+      background: #fbfcfe;
+      padding: 14px 14px 14px 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line-strong);
+      background: white;
+      color: #2d5fd3;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .action-btn.secondary {
+      color: #48637d;
+      background: #f7f9fc;
+    }
+
+    .annotate {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border: 1px dashed #cfdae6;
+      border-radius: 16px;
+      background: rgba(255,255,255,.78);
+    }
+
+    .note h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .note p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1100px) {
+      .card-main {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        border-left: 0;
+        border-top: 1px solid #edf2f7;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .annotate {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .card-top {
+        grid-template-columns: auto 1fr;
+      }
+
+      .score {
+        grid-column: 2;
+        width: fit-content;
+      }
+
+      .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="intro">
+      <h1>推荐方向：搜索结果流 + 右侧快捷动作带</h1>
+      <p>这版把“结果列表”重新定义成真正的检索输出区：先看排序和命中理由，再看少量证据标签，最后通过右侧动作快速进入图纸或定位页码。它保留检索感，不再像识别结果摘要卡。</p>
+    </section>
+
+    <section class="board">
+      <div class="topbar">
+        <div class="query-meta">
+          <span class="pill primary">查询: 热继电器部署</span>
+          <span class="pill">找到 11 条结果</span>
+          <span class="pill">已去重历史版本</span>
+          <span class="pill">排序: 相关度优先</span>
+        </div>
+        <div class="query-meta">
+          <span class="pill">仅当前版本</span>
+          <span class="pill">仅显示有页码</span>
+        </div>
+      </div>
+
+      <div class="subbar">
+        <div class="filters">
+          <span class="chip active">全部结果</span>
+          <span class="chip">精确命中优先</span>
+          <span class="chip">语义命中优先</span>
+          <span class="chip">含组合规则</span>
+        </div>
+        <div class="sorts">
+          <span class="chip active">列表视图</span>
+          <span class="chip">紧凑视图</span>
+        </div>
+      </div>
+
+      <div class="list">
+        <article class="card">
+          <div class="card-main">
+            <div class="content">
+              <div class="card-top">
+                <div class="rank">1</div>
+                <div>
+                  <h2 class="title">电气原理图智能识别阶段成果及检索规划汇报.pdf</h2>
+                  <div class="meta">图号 FR1 · 修订 A · 电气原理图智能识别项目 · 命中页 1 / 2 / 5 / 8</div>
+                </div>
+                <div class="score">相关度 0.044</div>
+              </div>
+
+              <div class="snippet">第 3 页热继电器回路、元件 F1 热继电器/过载保护器、共 1 个。修正语义：与“电动机启动与保护组合”关联最强，且在标题摘要中有近义表达。</div>
+
+              <div class="why"><strong>命中理由</strong>：查询词直接命中元件代号 `F1 / K11 / KM`，同时组合规则与摘要文本共同命中，所以该结果排在首位。</div>
+
+              <div class="tags">
+                <span class="tag blue">精确命中: F1</span>
+                <span class="tag blue">精确命中: K11</span>
+                <span class="tag green">组合规则</span>
+                <span class="tag green">语义接近</span>
+                <span class="tag purple">页面块</span>
+              </div>
+
+              <div class="footer">
+                <span>命中证据 4 处 · 最近更新 2026-06-24</span>
+                <span>结果 ID electric-recognition-001</span>
+              </div>
+            </div>
+
+            <aside class="actions">
+              <div class="action-btn">打开结果</div>
+              <div class="action-btn secondary">定位到第 1 页</div>
+              <div class="action-btn secondary">展开更多命中</div>
+            </aside>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-main">
+            <div class="content">
+              <div class="card-top">
+                <div class="rank">2</div>
+                <div>
+                  <h2 class="title">专用排烟风机控制原理</h2>
+                  <div class="meta">图号 CDDT-6-DZ-10 · 排烟系统 · 命中页 3 / 4</div>
+                </div>
+                <div class="score">相关度 0.037</div>
+              </div>
+
+              <div class="snippet">组合功能：电动机启动与保护组合规则 `motor_start_protection` 层级；短路保护 QF 三极断路器；过载保护 F1 热继电器；触点接触器 KM 交流接触器线圈。</div>
+
+              <div class="why"><strong>命中理由</strong>：虽然没有像首条一样强的精确命中，但语义与“热继电器保护回路”接近，且规则说明文本覆盖完整。</div>
+
+              <div class="tags">
+                <span class="tag green">语义命中</span>
+                <span class="tag green">电动机启动与保护</span>
+                <span class="tag purple">图纸摘要</span>
+              </div>
+
+              <div class="footer">
+                <span>历史版本已折叠 2 项</span>
+                <span>支持查看全部命中片段</span>
+              </div>
+            </div>
+
+            <aside class="actions">
+              <div class="action-btn">查看结果</div>
+              <div class="action-btn secondary">查看摘要</div>
+              <div class="action-btn secondary">切换紧凑视图</div>
+            </aside>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="annotate">
+      <div class="note">
+        <h3>1. 首屏心智改成“查询输出”</h3>
+        <p>查询回显、结果数、排序方式放到结果头部，不再把首屏注意力浪费在“目标区域/主结果区”这类壳层文案上。</p>
+      </div>
+      <div class="note">
+        <h3>2. 卡片先讲“为什么命中”</h3>
+        <p>从“标题 + 一大排标签”改成“标题 + 摘要 + 命中理由 + 少量证据标签”，阅读路径更接近搜索引擎结果。</p>
+      </div>
+      <div class="note">
+        <h3>3. 动作集中到右侧细带</h3>
+        <p>只保留最常用的打开、定位、展开动作，既借用了 B 的操作效率，又不把版面重新做成资产管理卡片。</p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

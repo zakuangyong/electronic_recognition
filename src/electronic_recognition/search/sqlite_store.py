@@ -321,6 +321,14 @@ class DrawingSearchStore:
             connection.commit()
             return True
 
+    def list_result_ids(self) -> list[str]:
+        self.initialize()
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT result_id FROM drawings"
+            ).fetchall()
+        return [str(row["result_id"]) for row in rows]
+
     def exact_search(
         self,
         terms: list[object],
@@ -462,6 +470,65 @@ class DrawingSearchStore:
             )
         return hits
 
+    def _matched_entities(
+        self,
+        connection: sqlite3.Connection,
+        ordered_hits: list[SearchHit],
+    ) -> tuple[list[str], list[str]]:
+        """Components/combinations that actually matched the query, derived from
+        the matched chunks — not the drawing's full recognized inventory. This is
+        what makes the search card show 'why it matched' instead of echoing the
+        whole recognition result.
+        """
+        chunk_ids = [hit.chunk_id for hit in ordered_hits if hit.chunk_id]
+        meta_by_id: dict[str, sqlite3.Row] = {}
+        if chunk_ids:
+            placeholders = ",".join("?" for _ in chunk_ids)
+            rows = connection.execute(
+                f"""
+                SELECT chunk_id, chunk_type, title, metadata_json
+                FROM search_chunks
+                WHERE chunk_id IN ({placeholders})
+                """,
+                chunk_ids,
+            ).fetchall()
+            meta_by_id = {str(r["chunk_id"]): r for r in rows}
+
+        components: list[str] = []
+        combinations: list[str] = []
+        seen_components: set[str] = set()
+        seen_combinations: set[str] = set()
+
+        def _add_component(code: str) -> None:
+            code = code.strip()
+            if code and code not in seen_components:
+                seen_components.add(code)
+                components.append(code)
+
+        for hit in ordered_hits:
+            # Exact component-code hit: the matched code itself is carried as the
+            # snippet (component-code terms are indexed without a chunk, see
+            # DrawingDocumentBuilder._exact_terms).
+            if "component_code" in (hit.exact_term_types or []):
+                _add_component(str(hit.snippet or ""))
+            chunk_row = meta_by_id.get(hit.chunk_id)
+            if chunk_row is None:
+                continue
+            chunk_type = str(chunk_row["chunk_type"] or "")
+            if chunk_type == "component_group":
+                try:
+                    meta = json.loads(chunk_row["metadata_json"] or "{}")
+                except (TypeError, json.JSONDecodeError):
+                    meta = {}
+                for code in meta.get("component_codes") or []:
+                    _add_component(str(code))
+            elif chunk_type == "combination":
+                name = str(chunk_row["title"] or "").strip()
+                if name and name not in seen_combinations:
+                    seen_combinations.add(name)
+                    combinations.append(name)
+        return components[:10], combinations[:8]
+
     def aggregate_drawings(
         self,
         hits: list[SearchHit],
@@ -470,6 +537,7 @@ class DrawingSearchStore:
         debug: bool = False,
         deduplicate: bool = True,
         filters: dict[str, object] | None = None,
+        query_terms: list[str] | None = None,
     ) -> list[DrawingSearchResult]:
         if not hits:
             return []
@@ -517,9 +585,15 @@ class DrawingSearchStore:
                 chunk_types = _unique(
                     hit.chunk_type for hit in ordered_hits if hit.chunk_type
                 )
-                components = _json_list(row["component_codes_json"])
-                combinations = _json_list(row["combination_names_json"])
+                matched_components, matched_combinations = (
+                    self._matched_entities(connection, ordered_hits)
+                )
                 best = ordered_hits[0]
+                snippet = self._snippet_for_hit(
+                    connection,
+                    best,
+                    query_terms or [],
+                )
                 ranked_results.append(
                     (
                         DrawingSearchResult(
@@ -533,16 +607,16 @@ class DrawingSearchStore:
                             system_name=str(row["system_name"] or ""),
                             score=round(score, 6),
                             matched_pages=matched_pages,
-                            matched_components=components[:10],
-                            matched_combinations=combinations[:8],
+                            matched_components=matched_components,
+                            matched_combinations=matched_combinations,
                             matched_chunk_types=chunk_types,
-                            snippet=best.snippet,
+                            snippet=snippet,
                             match_sources=sources,
                             preview_url=(
-                                f"/?result_id={row['result_id']}"
+                                f"/api/results/{row['result_id']}/preview-file"
                                 if not matched_pages
                                 else (
-                                    f"/?result_id={row['result_id']}"
+                                    f"/api/results/{row['result_id']}/preview-file"
                                     f"#page-{matched_pages[0]}"
                                 )
                             ),
@@ -613,6 +687,24 @@ class DrawingSearchStore:
                 ):
                     return False
         return True
+
+    def _snippet_for_hit(
+        self,
+        connection: sqlite3.Connection,
+        hit: SearchHit,
+        query_terms: list[str],
+    ) -> str:
+        if hit.snippet:
+            return hit.snippet
+        if not hit.chunk_id:
+            return ""
+        row = connection.execute(
+            "SELECT text FROM search_chunks WHERE chunk_id = ?",
+            (hit.chunk_id,),
+        ).fetchone()
+        if row is None:
+            return ""
+        return _snippet_around_terms(str(row["text"] or ""), query_terms)
 
     def status(self) -> dict[str, object]:
         self.initialize()
@@ -1049,6 +1141,34 @@ def _snippet(text: str, limit: int = 220) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
+
+
+def _snippet_around_terms(
+    text: str,
+    terms: list[str],
+    limit: int = 220,
+) -> str:
+    compact_text = " ".join(str(text or "").split())
+    if len(compact_text) <= limit:
+        return compact_text
+    lowered = compact_text.casefold()
+    match_at = -1
+    for term in terms:
+        needle = " ".join(str(term or "").split()).strip()
+        if not needle:
+            continue
+        match_at = lowered.find(needle.casefold())
+        if match_at >= 0:
+            break
+    if match_at < 0:
+        return _snippet(compact_text, limit)
+    window = max(1, limit - 6)
+    start = max(0, match_at - window // 2)
+    end = min(len(compact_text), start + window)
+    start = max(0, end - window)
+    prefix = "..." if start > 0 else ""
+    suffix = "..." if end < len(compact_text) else ""
+    return f"{prefix}{compact_text[start:end].strip()}{suffix}"
 
 
 def _aggregate_score(

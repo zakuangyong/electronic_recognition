@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Layout Review</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --card: #ffffff;
+      --line: #d6e0e8;
+      --ink: #193247;
+      --muted: #5f7284;
+      --blue: #1769aa;
+      --green: #1b8f75;
+      --warn: #c56c00;
+      --shadow: 0 10px 30px rgba(23, 41, 57, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.5 Inter, "Segoe UI", Arial, sans-serif;
+    }
+    .page {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .intro {
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .intro h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    .intro p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #f8fbfd);
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .panel p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+    .viewport {
+      height: 720px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      background: #f5f8fb;
+    }
+    .sidebar {
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      overflow: hidden;
+    }
+    .sidebar.problem {
+      background: linear-gradient(180deg, #fff, #fdf7f4);
+    }
+    .sidebar.solution {
+      background: linear-gradient(180deg, #fff, #f7fbff);
+    }
+    .content {
+      padding: 22px;
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .chip {
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #33546d;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .box {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .box strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    .box small {
+      color: var(--muted);
+    }
+    .ghost {
+      height: 48px;
+      border: 1px dashed #b8c8d6;
+      border-radius: 10px;
+      background: #f9fbfd;
+    }
+    .ghost.tall { height: 96px; }
+    .ghost.huge { height: 150px; }
+    .result-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .result-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge.warn { color: #8a5200; background: #fff2df; }
+    .badge.good { color: #0d6f58; background: #e7f8f2; }
+    .marker {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .notes {
+      margin-top: 12px;
+      padding: 14px;
+      border-top: 1px solid var(--line);
+      background: #fbfdff;
+    }
+    .notes ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+      color: var(--muted);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .section-title h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+    .sticky-bar {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #bfd6e8;
+      border-radius: 12px;
+      background: #eef6fc;
+    }
+    .sticky-bar strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .tiny {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 1200px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="intro">
+      <h1>Left Sidebar Layout Review</h1>
+      <p>This preview compares the current left-column pattern with the recommended layout direction for Workbench and Drawing Search. Focus: hierarchy, above-the-fold action visibility, and reduced vertical pressure.</p>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <header>
+          <h2>Workbench: Current Problem</h2>
+          <p>The left column only contains the upload block, so the space feels empty before submission and loses status visibility after submission.</p>
+        </header>
+        <div class="viewport">
+          <aside class="sidebar problem">
+            <div class="section-title">
+              <h3>Upload Drawing</h3>
+              <span class="badge warn"><span class="marker"></span>Too Sparse</span>
+            </div>
+            <div class="stack">
+              <div class="ghost huge"></div>
+              <div class="ghost"></div>
+              <div class="box">
+                <strong>Message</strong>
+                <small>Submission result appears below the form, but task context is not grouped.</small>
+              </div>
+              <div class="ghost tall"></div>
+            </div>
+            <div class="notes">
+              <strong>Issues</strong>
+              <ul>
+                <li>Primary action is visible, but surrounding context is weak.</li>
+                <li>Once a task starts, left side provides no quick status summary.</li>
+                <li>The column feels visually unfinished and wastes vertical space.</li>
+              </ul>
+            </div>
+          </aside>
+          <main class="content">
+            <div class="result-card">
+              <strong>Right Panel</strong>
+              <div class="tiny">Result tabs, preview, and status all live here. Left and right feel disconnected.</div>
+            </div>
+            <div class="result-card"><strong>Detected Components</strong><div class="tiny">List / table area</div></div>
+            <div class="result-card"><strong>Preview Pages</strong><div class="tiny">Image preview area</div></div>
+          </main>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>Workbench: Recommended</h2>
+          <p>Turn the left column into a compact task cockpit: upload at top, current job summary in the middle, quick guidance fixed at bottom.</p>
+        </header>
+        <div class="viewport">
+          <aside class="sidebar solution">
+            <div class="section-title">
+              <h3>Task Cockpit</h3>
+              <span class="badge good"><span class="marker"></span>Recommended</span>
+            </div>
+            <div class="stack">
+              <div class="box">
+                <strong>1. Upload & Start</strong>
+                <small>Keep the file picker and start button in the first screen.</small>
+              </div>
+              <div class="box">
+                <strong>2. Current Task Snapshot</strong>
+                <small>Show result ID, status, and latest feedback directly under the form.</small>
+              </div>
+              <div class="split">
+                <div class="box">
+                  <strong>Accepted</strong>
+                  <small>PDF / PNG</small>
+                </div>
+                <div class="box">
+                  <strong>Output</strong>
+                  <small>Result / Preview</small>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-bar">
+              <strong>Bottom Help Area</strong>
+              <div class="tiny">Keep short tips, task stage, or “open result page” action fixed near the bottom.</div>
+            </div>
+          </aside>
+          <main class="content">
+            <div class="result-card">
+              <strong>Right Panel Becomes Pure Result Space</strong>
+              <div class="tiny">Tabs and previews stay on the right; left side handles operation and task context.</div>
+            </div>
+            <div class="result-card"><strong>Detected Components</strong><div class="tiny">No change in business logic</div></div>
+            <div class="result-card"><strong>Preview Pages</strong><div class="tiny">No change in business logic</div></div>
+          </main>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>Search: Current Problem</h2>
+          <p>The left column stacks search form, health info, and demo queries in one flow, so result visibility is easily pushed down by support content.</p>
+        </header>
+        <div class="viewport">
+          <aside class="sidebar problem">
+            <div class="section-title">
+              <h3>Search Conditions</h3>
+              <span class="badge warn"><span class="marker"></span>Too Long</span>
+            </div>
+            <div class="chip-row">
+              <span class="chip">BM25</span>
+              <span class="chip">Vector</span>
+              <span class="chip">Hybrid</span>
+            </div>
+            <div class="stack">
+              <div class="ghost tall"></div>
+              <div class="ghost"></div>
+              <div class="ghost"></div>
+              <div class="box">
+                <strong>Health / Index Status</strong>
+                <small>Useful, but competes with the form in the same vertical stream.</small>
+              </div>
+              <div class="box">
+                <strong>Demo Queries</strong>
+                <small>Helpful, but still occupies left-column scroll budget.</small>
+              </div>
+            </div>
+            <div class="notes">
+              <strong>Issues</strong>
+              <ul>
+                <li>The submit action is not visually anchored.</li>
+                <li>Support blocks still crowd the same column.</li>
+                <li>The column reads like a long form instead of an operations panel.</li>
+              </ul>
+            </div>
+          </aside>
+          <main class="content">
+            <div class="result-card"><strong>Search Results</strong><div class="tiny">Main value area</div></div>
+            <div class="result-card"><strong>Top Matched Drawing</strong><div class="tiny">Card list starts here</div></div>
+            <div class="result-card"><strong>More Hits</strong><div class="tiny">Scrollable result stream</div></div>
+          </main>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>Search: Recommended</h2>
+          <p>Split the left column into three clear zones: primary search form, compact support tray, and persistent action/footer area.</p>
+        </header>
+        <div class="viewport">
+          <aside class="sidebar solution">
+            <div class="section-title">
+              <h3>Search Operations Panel</h3>
+              <span class="badge good"><span class="marker"></span>Recommended</span>
+            </div>
+            <div class="stack">
+              <div class="box">
+                <strong>1. Core Search Form</strong>
+                <small>Keyword, retrieval mode, filters, debug switch. Keep this visually dominant.</small>
+              </div>
+              <div class="box">
+                <strong>2. Compact Utility Tray</strong>
+                <small>Move health and demo queries into compact collapsible cards with tighter spacing.</small>
+              </div>
+              <div class="box">
+                <strong>3. Persistent Action Area</strong>
+                <small>Keep submit/rebuild controls visually anchored at the bottom of the form section.</small>
+              </div>
+            </div>
+            <div class="sticky-bar">
+              <strong>Search Status Row</strong>
+              <div class="tiny">Use a light footer strip for online/degraded state and quick hints, instead of large blocks in the main stack.</div>
+            </div>
+          </aside>
+          <main class="content">
+            <div class="result-card"><strong>Results Gain More Attention</strong><div class="tiny">The left side becomes denser but shorter, so right-side results dominate sooner.</div></div>
+            <div class="result-card"><strong>Top Matched Drawing</strong><div class="tiny">First card appears earlier in the viewport</div></div>
+            <div class="result-card"><strong>More Hits</strong><div class="tiny">Less left-column competition</div></div>
+          </main>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

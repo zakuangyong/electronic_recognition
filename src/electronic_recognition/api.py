@@ -7,6 +7,7 @@ import json
 import re
 import shutil
 import threading
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
@@ -45,9 +46,28 @@ from .search.qdrant_store import QdrantVectorStore
 from .search.query_parser import QueryParser
 from .search.search_service import DrawingSearchService
 from .search.sqlite_store import DrawingSearchStore
+from .diff.response import build_diff_result_payload
+from .diff.service import DrawingDiffService
+from .diff.storage import DiffJobStorage
 
 
-app = FastAPI(title="Electronic Recognition", version="0.1.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    # Warm up the search stack off the event loop so a slow model load / offline
+    # retry never blocks startup; health reports degraded until it finishes.
+    threading.Thread(
+        target=_run_search_warmup,
+        name="search-warmup",
+        daemon=True,
+    ).start()
+    yield
+
+
+app = FastAPI(
+    title="Electronic Recognition",
+    version="0.1.0",
+    lifespan=_lifespan,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -61,12 +81,22 @@ KNOWLEDGE_PATH = PROJECT_ROOT / "data" / "index" / "components.json"
 CUSTOM_RULES_PATH = PROJECT_ROOT / "data" / "index" / "custom_rules.json"
 SEARCH_DEMO_QUERIES_PATH = PROJECT_ROOT / "data" / "search" / "demo_queries.json"
 RESULT_DIR = PROJECT_ROOT / "result"
+DIFF_JOB_DIR = PROJECT_ROOT / "data" / "diff" / "jobs"
 RESULT_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.\-\u4e00-\u9fff]+$")
 ACTIVE_RESULT_IDS: set[str] = set()
 ACTIVE_RESULT_IDS_LOCK = threading.Lock()
 SEARCH_RUNTIME_LOCK = threading.RLock()
 EMBEDDING_BACKENDS: dict[tuple[object, ...], object] = {}
 QDRANT_CLIENTS: dict[tuple[object, ...], object] = {}
+# Serializes every operation on the shared embedded-Qdrant client. QdrantLocal
+# is not concurrency-safe, so the background auto-index thread and request
+# threads must take turns. Reentrant so a single op can ensure_collection then
+# upsert/search without self-deadlock.
+QDRANT_OP_LOCK = threading.RLock()
+# Set by the startup warmup when search cannot be brought up (model download,
+# stale Qdrant lock, etc.). Surfaced via /api/search/health so the UI degrades
+# instead of the whole app failing.
+SEARCH_WARMUP_ERROR = ""
 STEP_FILES = {
     "recognition_log": "steps/00-recognition-log.json",
     "title_block": "steps/01-title-block.json",
@@ -105,6 +135,44 @@ def _close_search_clients() -> None:
 
 
 atexit.register(_close_search_clients)
+
+
+def _run_search_warmup() -> None:
+    """Eagerly bring up the search stack so the first query is fast and so
+    startup problems (model download, stale embedded-Qdrant lock) surface via
+    health instead of failing the app. Runs in a daemon thread; never raises.
+    """
+    global SEARCH_WARMUP_ERROR
+    try:
+        settings = Settings.from_env()
+    except Exception as exc:  # pragma: no cover - defensive
+        SEARCH_WARMUP_ERROR = f"settings: {exc}"
+        return
+    if not settings.search_enabled or settings.search_mode == "disabled":
+        return
+    try:
+        _search_store(settings).initialize()
+    except Exception as exc:
+        SEARCH_WARMUP_ERROR = f"sqlite: {exc}"
+        return
+    try:
+        backend = _embedding_backend(settings)
+        if getattr(backend, "model_id", "") not in ("", "disabled"):
+            backend.embed_query("warmup")
+    except Exception as exc:
+        SEARCH_WARMUP_ERROR = f"embedding: {exc}"
+        return
+    try:
+        vector_store = _vector_store(settings)
+        if vector_store is not None:
+            vector_store.ping()
+    except Exception as exc:
+        SEARCH_WARMUP_ERROR = (
+            f"qdrant: {exc} —— 可能是 data/search/qdrant 被其他进程占用或存在"
+            " 残留 .lock，请确认仅有一个服务进程后清理锁文件。"
+        )
+        return
+    SEARCH_WARMUP_ERROR = ""
 
 
 @app.get("/health")
@@ -166,6 +234,12 @@ def search_health() -> dict[str, object]:
             _error_detail("search_health_failed", str(exc)),
         ) from exc
     status["enabled"] = True
+    # Fold the startup warmup outcome in: if warmup failed (model download,
+    # stale embedded-Qdrant lock, ...) report degraded with the reason even
+    # when the lazy health probe happened to succeed.
+    if SEARCH_WARMUP_ERROR:
+        status["degraded"] = True
+        status["warmup_error"] = SEARCH_WARMUP_ERROR
     return status
 
 
@@ -241,6 +315,98 @@ def search_index_status() -> dict[str, object]:
 def search_result_index_status(result_id: str) -> dict[str, object]:
     settings = Settings.from_env()
     return _search_store(settings).result_status(result_id)
+
+
+@app.post("/api/diff/compare")
+async def compare_drawings(
+    old_file: UploadFile = File(...),
+    new_file: UploadFile = File(...),
+    file_type: str = Form(...),
+    dpi: int = Form(300),
+    threshold: int = Form(25),
+) -> dict[str, object]:
+    normalized_type = _normalize_diff_file_type(file_type)
+    old_name = old_file.filename or "old_file"
+    new_name = new_file.filename or "new_file"
+    if normalized_type is None:
+        return _diff_error_response(
+            "validation",
+            "invalid file_type",
+            status=False,
+        )
+    if Path(old_name).suffix.lower() != Path(new_name).suffix.lower():
+        return _diff_error_response(
+            "validation",
+            "file extensions must match",
+            status=False,
+        )
+    if not _diff_extension_matches(normalized_type, old_name):
+        return _diff_error_response(
+            "validation",
+            "file extension does not match file_type",
+            status=False,
+        )
+
+    job = _diff_storage().create_job()
+    old_path, new_path = _diff_storage().save_uploads(
+        job,
+        old_name,
+        await old_file.read(),
+        new_name,
+        await new_file.read(),
+    )
+    try:
+        _diff_service().run_compare(
+            job=job,
+            old_source=old_path,
+            new_source=new_path,
+            file_type=normalized_type,
+            dpi=max(72, min(1200, int(dpi))),
+            threshold=max(0, min(255, int(threshold))),
+        )
+    except Exception as exc:
+        return _diff_error_response(
+            "pipeline",
+            str(exc),
+            job_id=job.job_id,
+            status=False,
+        )
+    return _diff_success_response(job.job_id, build_diff_result_payload(job))
+
+
+@app.get("/api/diff/results/{job_id}")
+def get_diff_result(job_id: str) -> dict[str, object]:
+    job = _diff_storage().get_existing_job(job_id)
+    if job is None:
+        raise HTTPException(
+            404,
+            _error_detail("diff_job_not_found", "Diff job not found."),
+        )
+    try:
+        payload = build_diff_result_payload(job)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            404,
+            _error_detail("diff_result_not_found", "Diff result not found."),
+        ) from exc
+    return _diff_success_response(job.job_id, payload)
+
+
+@app.get("/api/diff/files/{job_id}/{filename:path}")
+def get_diff_file(job_id: str, filename: str) -> FileResponse:
+    job = _diff_storage().get_existing_job(job_id)
+    if job is None:
+        raise HTTPException(
+            404,
+            _error_detail("diff_job_not_found", "Diff job not found."),
+        )
+    path = _diff_storage().resolve_file(job, filename)
+    if path is None:
+        raise HTTPException(
+            404,
+            _error_detail("diff_file_not_found", "Diff file not found."),
+        )
+    return FileResponse(path)
 
 
 @app.get("/api/config")
@@ -583,7 +749,7 @@ def delete_knowledge_image(
 def analyze(
     drawing: UploadFile = File(...),
 ) -> dict[str, object]:
-    filename = drawing.filename or ""
+    filename = _safe_filename(drawing.filename or "")
     suffix = Path(filename).suffix.lower()
     if suffix not in {".pdf", ".png"}:
         raise HTTPException(400, "仅支持 PDF 或 PNG 格式。")
@@ -666,6 +832,37 @@ def saved_result(result_id: str) -> dict[str, object]:
             "manifest": manifest_payload,
         }
     if not result_path.is_file():
+        # The result has not been produced yet. If the analysis job is still
+        # running (the initial manifest exists), report its running status with
+        # HTTP 200 so clients can keep polling instead of treating the
+        # in-progress window as a fatal error.
+        manifest_path = result_dir / "manifest.json"
+        if manifest_path.is_file():
+            try:
+                manifest_payload = json.loads(
+                    manifest_path.read_text(encoding="utf-8")
+                )
+            except json.JSONDecodeError:
+                manifest_payload = {}
+            if isinstance(manifest_payload, dict):
+                status = str(manifest_payload.get("status", "running"))
+                if status not in {"complete", "failed"}:
+                    return {
+                        "result_id": result_id,
+                        "document": (
+                            manifest_payload.get("document") or result_id
+                        ),
+                        "status": status,
+                        "detected_components": [],
+                        "detected_combinations": [],
+                        "title_block": {},
+                        "control_signal_configuration": {},
+                        "component_table": {},
+                        "recognition_steps": {},
+                        "warnings": [],
+                        "meta": {},
+                        "manifest": manifest_payload,
+                    }
         raise HTTPException(404, "Recognition result does not exist.")
     try:
         payload = json.loads(result_path.read_text(encoding="utf-8"))
@@ -673,6 +870,10 @@ def saved_result(result_id: str) -> dict[str, object]:
         raise HTTPException(500, "Recognition result is not valid JSON.") from exc
     if not isinstance(payload, dict):
         raise HTTPException(500, "Recognition result must be an object.")
+    # A persisted result.json only exists on success, so surface the terminal
+    # "complete" status the frontend polls for (it is not part of the
+    # RecognitionResult payload itself).
+    payload.setdefault("status", "complete")
     if "detected_combinations" not in payload:
         steps = payload.get("recognition_steps", {})
         payload["detected_combinations"] = detect_combinations(
@@ -705,6 +906,24 @@ def result_manifest(result_id: str) -> dict[str, object]:
         return json.loads(manifest_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise HTTPException(500, "Recognition manifest is not valid JSON.") from exc
+
+
+@app.get("/api/results/{result_id}/preview-file")
+def result_preview_file(result_id: str) -> FileResponse:
+    result_dir = _result_path(result_id)
+    preview_path = _resolve_result_preview_file(result_dir)
+    if preview_path is None:
+        raise HTTPException(404, "Recognition preview file does not exist.")
+    return FileResponse(preview_path)
+
+
+@app.get("/api/results/{result_id}/preview-page/{page}")
+def result_preview_page(result_id: str, page: int) -> FileResponse:
+    result_dir = _result_path(result_id)
+    preview_path = _resolve_result_preview_page(result_dir, page)
+    if preview_path is None:
+        raise HTTPException(404, "Recognition preview page does not exist.")
+    return FileResponse(preview_path)
 
 
 @app.get("/api/results/{result_id}/steps")
@@ -757,8 +976,29 @@ def _create_result_dir(filename: str) -> tuple[str, Path]:
     return result_id, result_dir
 
 
+def _safe_filename(name: str) -> str:
+    """Recover the real UTF-8 filename from an upload.
+
+    Starlette decodes multipart filenames as latin-1, so a UTF-8 (e.g. Chinese)
+    filename arrives mojibake'd. If re-encoding latin-1 -> utf-8 yields valid
+    text, use it; otherwise keep the original. Idempotent for plain-ASCII names.
+    """
+    if not name:
+        return name
+    try:
+        recovered = name.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return name
+    if recovered == name:
+        return name
+    # Prefer the recovered form only when it actually changes pure-latin1 bytes
+    # into multibyte UTF-8 text (i.e. the original was mangled non-ASCII).
+    return recovered
+
+
 def _result_id_for_filename(filename: str) -> str:
     source_name = Path(filename or "drawing").name or "drawing"
+    source_name = Path(source_name).stem or source_name
     safe_name = re.sub(
         r"[^A-Za-z0-9_.\-\u4e00-\u9fff]+",
         "_",
@@ -818,7 +1058,6 @@ def _write_initial_manifest(
             "artifacts": {
                 "pages": "pages",
                 "reference-panels": "reference-panels",
-                "page-tiles": "page-tiles",
             },
             "page_files": [],
         },
@@ -915,19 +1154,19 @@ def _progress_log_entry(
         message = f"知识库名称修正已处理 {len(payload)} 种元器件。"
     elif name == "open_recognition_tiles" and isinstance(payload, list):
         if not payload:
-            message = "已生成图纸切片，准备调用视觉模型。"
+            message = "已准备图纸整页图，准备调用视觉模型。"
         else:
             latest = payload[-1] if isinstance(payload[-1], dict) else {}
             status = str(latest.get("status", "complete"))
-            tile = str(latest.get("tile", ""))
+            view = str(latest.get("tile", "full"))
             page = latest.get("page", "")
             if status == "failed":
                 level = "warning"
-                message = f"第 {page} 页切片 {tile} 识别失败，继续处理其他切片。"
+                message = f"第 {page} 页整页图 {view} 识别失败，继续处理后续页面。"
             else:
                 symbol_count = latest.get("symbol_count", 0)
                 message = (
-                    f"第 {page} 页切片 {tile} 识别完成，"
+                    f"第 {page} 页整页图 {view} 识别完成，"
                     f"发现 {symbol_count} 条记录。"
                 )
     elif name == "job_failed":
@@ -1007,7 +1246,7 @@ def _persist_result(
         shutil.copy2(input_path, target_input)
 
     artifacts: dict[str, str] = {}
-    for name in ("pages", "reference-panels", "page-tiles"):
+    for name in ("pages", "reference-panels"):
         source = work_dir / name
         if not source.exists():
             continue
@@ -1165,11 +1404,20 @@ def _search_service(settings: Settings) -> DrawingSearchService:
         vector_store=_vector_store(settings),
         bm25_limit=settings.search_bm25_limit,
         vector_limit=settings.search_vector_limit,
+        vector_min_score=settings.search_vector_min_score,
         rrf_k=settings.search_rrf_k,
         default_limit=settings.search_result_limit,
         mode=settings.search_mode,
         deduplicate=settings.search_deduplicate,
     )
+
+
+def _diff_storage() -> DiffJobStorage:
+    return DiffJobStorage(DIFF_JOB_DIR)
+
+
+def _diff_service() -> DrawingDiffService:
+    return DrawingDiffService()
 
 
 def _read_search_mapping(path: Path) -> dict[str, float]:
@@ -1271,6 +1519,7 @@ def _vector_store(settings: Settings) -> object | None:
     return QdrantVectorStore(
         collection_name=settings.search_collection,
         client_factory=_client_factory,
+        lock=QDRANT_OP_LOCK,
     )
 
 
@@ -1411,6 +1660,53 @@ def _error_detail(
     }
 
 
+def _normalize_diff_file_type(value: str) -> str | None:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"catdrawing", "dwg", "pdf"}:
+        return normalized
+    return None
+
+
+def _diff_extension_matches(file_type: str, filename: str) -> bool:
+    suffix = Path(filename).suffix.lower()
+    return (
+        (file_type == "catdrawing" and suffix == ".catdrawing")
+        or (file_type == "dwg" and suffix == ".dwg")
+        or (file_type == "pdf" and suffix == ".pdf")
+    )
+
+
+def _diff_success_response(
+    job_id: str,
+    data: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "success": True,
+        "message": "compare completed",
+        "stage": "completed",
+        "job_id": job_id,
+        "data": data,
+        "error_code": "",
+    }
+
+
+def _diff_error_response(
+    stage: str,
+    message: str,
+    *,
+    job_id: str | None = None,
+    status: bool = False,
+) -> dict[str, object]:
+    return {
+        "success": status,
+        "message": message,
+        "stage": stage,
+        "job_id": job_id,
+        "data": None,
+        "error_code": f"{stage}_error",
+    }
+
+
 def _result_path(result_id: str) -> Path:
     if not RESULT_ID_PATTERN.fullmatch(result_id):
         raise HTTPException(400, "Invalid result id.")
@@ -1419,6 +1715,79 @@ def _result_path(result_id: str) -> Path:
     if result_path != root and root not in result_path.parents:
         raise HTTPException(403, "Invalid result path.")
     return result_path
+
+
+def _is_result_child(path: Path, result_dir: Path) -> bool:
+    result_root = result_dir.resolve()
+    return path == result_root or result_root in path.parents
+
+
+def _resolve_result_preview_file(result_dir: Path) -> Path | None:
+    manifest_path = result_dir / "manifest.json"
+    manifest: dict[str, object] = {}
+    if manifest_path.is_file():
+        try:
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise HTTPException(500, "Recognition manifest is not valid JSON.") from exc
+        if isinstance(loaded, dict):
+            manifest = loaded
+
+    input_file = str(manifest.get("input_file", "")).strip()
+    if input_file:
+        candidate = (result_dir / input_file).resolve()
+        if _is_result_child(candidate, result_dir) and candidate.is_file():
+            return candidate
+
+    input_dir = result_dir / "input"
+    if input_dir.is_dir():
+        files = sorted(path for path in input_dir.iterdir() if path.is_file())
+        for suffix in (".pdf", ".png", ".jpg", ".jpeg", ".webp"):
+            for path in files:
+                if path.suffix.lower() == suffix:
+                    return path
+        if files:
+            return files[0]
+    first_page = _resolve_first_result_preview_page(result_dir)
+    if first_page is not None:
+        return first_page
+    return None
+
+
+def _resolve_result_preview_page(result_dir: Path, page: int) -> Path | None:
+    if page < 1:
+        return None
+    pages_dir = result_dir / "pages"
+    if not pages_dir.is_dir():
+        return None
+    for suffix in (".png", ".jpg", ".jpeg", ".webp"):
+        candidate = (pages_dir / f"page-{page}{suffix}").resolve()
+        if _is_result_child(candidate, result_dir) and candidate.is_file():
+            return candidate
+    return None
+
+
+def _resolve_first_result_preview_page(result_dir: Path) -> Path | None:
+    pages_dir = result_dir / "pages"
+    if not pages_dir.is_dir():
+        return None
+    files = [
+        path
+        for path in pages_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
+    ]
+    for path in sorted(files, key=_preview_page_sort_key):
+        candidate = path.resolve()
+        if _is_result_child(candidate, result_dir):
+            return candidate
+    return None
+
+
+def _preview_page_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        return (int(path.stem.rsplit("-", 1)[-1]), path.name)
+    except ValueError:
+        return (sys.maxsize, path.name)
 
 
 def _write_json(path: Path, payload: object) -> None:

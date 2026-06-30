@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -29,7 +30,6 @@ from .prompts import (
     recognition_prompt,
 )
 from .title_block_extractor import extract_title_block
-from .region_images import crop_region_image
 
 
 class RecognitionPipeline:
@@ -233,8 +233,21 @@ class RecognitionPipeline:
             ),
             "reference_batch_count": len(reference_batches),
             "page_view_counts": page_view_counts,
-            "tile_grid": self.settings.tile_grid,
-            "tile_overlap": self.settings.tile_overlap,
+            "page_view_mode": (
+                "full_page+tiles"
+                if any(count > 1 for count in page_view_counts)
+                else "full_page"
+            ),
+            "tile_grid": (
+                self.settings.tile_grid
+                if any(count > 1 for count in page_view_counts)
+                else 1
+            ),
+            "tile_overlap": (
+                self.settings.tile_overlap
+                if any(count > 1 for count in page_view_counts)
+                else 0.0
+            ),
             "open_recognition_concurrency": (
                 self.settings.open_recognition_concurrency
             ),
@@ -365,28 +378,17 @@ class RecognitionPipeline:
         reference_batches = list(
             _batches(references, self.settings.reference_batch_size)
         )
-        layouts_by_page = _layouts_by_page(page_layouts)
         for page in document.pages:
-            legacy_views = _build_page_views(
+            page_views = _build_page_views(
                 Path(page.image_path),
-                directory / "page-tiles",
+                directory,
                 page.number,
-                self.settings.tile_grid,
-                self.settings.tile_overlap,
+                1,
+                0.0,
             )
-            legacy_page_view_count += len(legacy_views)
-            page_views = _build_routed_page_views(
-                Path(page.image_path),
-                directory / "page-tiles",
-                page.number,
-                self.settings,
-                layouts_by_page.get(page.number),
-                legacy_views,
-            )
+            legacy_page_view_count += len(page_views)
             page_view_counts.append(len(page_views))
-            routed_component_view_count += len(
-                [view for view in page_views if _is_component_view(view)]
-            )
+            routed_component_view_count += len(page_views)
             view_metadata = _view_metadata(page_views)
             page_images = [
                 Path(str(view["path"])) for view in page_views
@@ -460,32 +462,27 @@ class RecognitionPipeline:
         failed_views = 0
         legacy_page_view_count = 0
         routed_component_view_count = 0
-        layouts_by_page = _layouts_by_page(page_layouts)
         _emit(progress, "open_symbols", raw_symbols)
         _emit(progress, "open_recognition_tiles", tile_statuses)
         for page in document.pages:
-            legacy_views = _build_page_views(
+            # 两遍：整页(基准) + 分块(高分辨率补识别)。两遍结果在 raw_symbols 里
+            # 经 _deduplicate_open_symbols 按代号合并去重，整页先处理保证其为基准。
+            page_views = _build_page_views(
                 Path(page.image_path),
-                directory / "page-tiles",
+                directory,
+                page.number,
+                1,
+                0.0,
+            ) + _build_tile_views(
+                Path(page.image_path),
+                directory,
                 page.number,
                 self.settings.tile_grid,
                 self.settings.tile_overlap,
             )
-            legacy_page_view_count += len(legacy_views)
-            page_views = _build_routed_page_views(
-                Path(page.image_path),
-                directory / "page-tiles",
-                page.number,
-                self.settings,
-                layouts_by_page.get(page.number),
-                legacy_views,
-            )
+            legacy_page_view_count += len(page_views)
             page_view_counts.append(len(page_views))
-            recognition_views = [
-                view
-                for view in page_views
-                if _is_component_view(view)
-            ] or page_views
+            recognition_views = page_views
             routed_component_view_count += len(recognition_views)
             workers = min(
                 len(recognition_views),
@@ -524,7 +521,7 @@ class RecognitionPipeline:
                 if error is not None:
                     failed_views += 1
                     message = (
-                        f"第 {page.number} 页切片 {tile_name} "
+                        f"第 {page.number} 页整页图 {tile_name} "
                         f"开放识别失败：{error}"
                     )
                     warnings.append(message)
@@ -532,6 +529,7 @@ class RecognitionPipeline:
                         {
                             "page": page.number,
                             "tile": tile_name,
+                            "view": tile_name,
                             "status": "failed",
                             "elapsed_seconds": round(elapsed, 2),
                             "error": str(error),
@@ -557,6 +555,7 @@ class RecognitionPipeline:
                     {
                         "page": page.number,
                         "tile": tile_name,
+                        "view": tile_name,
                         "status": status,
                         "elapsed_seconds": round(elapsed, 2),
                         "symbol_count": len(remapped),
@@ -564,7 +563,7 @@ class RecognitionPipeline:
                 )
                 if response.get("truncated"):
                     warnings.append(
-                        f"第 {page.number} 页切片 {tile_name} "
+                        f"第 {page.number} 页整页图 {tile_name} "
                         "返回结果达到单次上限，可能存在漏识别。"
                     )
                 warnings.extend(_warnings(response))
@@ -576,6 +575,8 @@ class RecognitionPipeline:
                 )
         corrected: list[dict[str, Any]] = []
         rag_corrections: list[dict[str, Any]] = []
+        raw_symbols = _absorb_block_terminals(raw_symbols)
+        _emit(progress, "open_symbols", raw_symbols)
         open_categories = _group_open_symbols(raw_symbols)
         category_summaries = [
             category["summary"] for category in open_categories
@@ -716,6 +717,7 @@ class RecognitionPipeline:
         self,
         symbol: dict[str, Any],
     ) -> list[ComponentSample]:
+        hint = _custom_symbol_shape_hint(symbol)
         query = " ".join(
             str(symbol.get(key, ""))
             for key in (
@@ -726,10 +728,20 @@ class RecognitionPipeline:
                 "evidence",
             )
         )
+        if hint:
+            query = f"{query} {hint}".strip()
         preferred_ids = _preferred_ids_for_code(
             str(symbol.get("code", "")),
             self.knowledge_base.components,
         )
+        if hint:
+            preferred_ids = [
+                *preferred_ids,
+                *_preferred_custom_symbol_ids(
+                    hint,
+                    self.knowledge_base.components,
+                ),
+            ]
         return self.knowledge_base.search(
             query,
             self.settings.correction_candidate_limit,
@@ -779,7 +791,22 @@ class RecognitionPipeline:
                 or _confidence(correction.get("confidence")) < 0.45
             ):
                 correction["reference_id"] = ""
+            exact_custom = _exact_custom_symbol_correction(
+                symbols[index],
+                candidate_sets[index],
+            )
+            if exact_custom is not None:
+                correction.update(exact_custom)
             by_index[index] = correction
+        for index, symbol in enumerate(symbols):
+            if index in by_index:
+                continue
+            exact_custom = _exact_custom_symbol_correction(
+                symbol,
+                candidate_sets[index],
+            )
+            if exact_custom is not None:
+                by_index[index] = exact_custom
         return [
             by_index.get(index, {})
             for index in range(len(symbols))
@@ -990,6 +1017,197 @@ def _sample_summary(sample: ComponentSample) -> dict[str, object]:
     }
 
 
+def _exact_custom_symbol_correction(
+    symbol: dict[str, Any],
+    candidates: list[ComponentSample],
+) -> dict[str, Any] | None:
+    shape_hint = _custom_symbol_shape_hint(symbol)
+    text = " ".join(
+        str(symbol.get(key, ""))
+        for key in (
+            "raw_label",
+            "label",
+            "component_type",
+            "evidence",
+        )
+    )
+    if shape_hint:
+        text = f"{text} {shape_hint}".strip()
+    code_tokens = _symbol_code_tokens(symbol)
+    for sample in candidates:
+        if not _is_custom_symbol_sample(sample):
+            continue
+        matched_alias = _matched_strong_alias(
+            text, sample
+        ) or _matched_exact_code_alias(code_tokens, sample)
+        if not matched_alias:
+            continue
+        return {
+            "reference_id": sample.id,
+            "label": sample.label,
+            "component_type": sample.component_type,
+            "confidence": 0.98,
+            "reason": (
+                "开放识别文本或形状提示命中知识库自定义图形标识别名 "
+                f"{matched_alias}"
+            ),
+        }
+    return None
+
+
+def _is_custom_symbol_sample(sample: ComponentSample) -> bool:
+    return (
+        sample.id.casefold().startswith("user-symbol-")
+        or "图形标识" in sample.component_type
+    )
+
+
+def _custom_symbol_shape_hint(symbol: dict[str, Any]) -> str:
+    text = " ".join(
+        str(symbol.get(key, ""))
+        for key in (
+            "raw_label",
+            "label",
+            "component_type",
+            "evidence",
+        )
+    )
+    normalized = _normalize_category_text(text)
+    code_tokens = _symbol_code_tokens(symbol)
+    count = _bounded_int(
+        symbol.get("occurrence_count"),
+        1,
+        10000,
+        1,
+    )
+    if code_tokens or count != 1:
+        return ""
+    if not any(
+        token in normalized
+        for token in (
+            "端子排",
+            "接线端子",
+            "多端子",
+            "连接器",
+            "连接器件",
+        )
+    ):
+        return ""
+    if any(
+        token in normalized
+        for token in (
+            "圆形端子",
+            "端子符号",
+            "下方标注",
+            "x01",
+            "xt:",
+            "x1:",
+        )
+    ):
+        return ""
+    return (
+        "GSD GSD图形标识 GSD符号 "
+        "小矩形带三角齿 齿形矩形 锯齿矩形 竖向GSD"
+    )
+
+
+def _preferred_custom_symbol_ids(
+    hint: str,
+    components: list[ComponentSample],
+) -> list[str]:
+    hint_text = hint.casefold()
+    preferred: list[str] = []
+    for sample in components:
+        if not _is_custom_symbol_sample(sample):
+            continue
+        values = [
+            sample.id,
+            sample.label,
+            sample.model,
+            *sample.aliases,
+        ]
+        if any(
+            str(value).strip()
+            and str(value).strip().casefold() in hint_text
+            for value in values
+        ):
+            preferred.append(sample.id)
+    return preferred
+
+
+def _symbol_code_tokens(symbol: dict[str, Any]) -> set[str]:
+    values: list[str] = []
+    raw_codes = symbol.get("codes")
+    if isinstance(raw_codes, list):
+        values.extend(str(item) for item in raw_codes)
+    elif raw_codes:
+        values.append(str(raw_codes))
+    values.append(str(symbol.get("code", "")))
+    tokens: set[str] = set()
+    for value in values:
+        for token in re.split(r"[,，;；\s]+", value.casefold()):
+            if token:
+                tokens.add(token)
+    return tokens
+
+
+def _designator_prefix(token: str) -> str:
+    """取代号的字母前缀作为元件类别标识(FU1->fu、G1->g、X01:1->x、KC2->kc)。
+
+    GB/IEC 中代号的字母前缀代表元件类别，比开放识别给出的粗 label/type 更可靠；
+    无字母前缀(纯数字等)时退回整个代号。
+    """
+    match = re.match(r"[a-z]+", token.casefold())
+    return match.group(0) if match else token.casefold()
+
+
+def _matched_strong_alias(
+    text: str,
+    sample: ComponentSample,
+) -> str:
+    text = text.casefold()
+    for alias in [
+        sample.label,
+        sample.model,
+        *sample.aliases,
+    ]:
+        alias = str(alias).strip()
+        if not _is_strong_symbol_alias(alias):
+            continue
+        pattern = re.compile(
+            rf"(?<![a-z0-9_-]){re.escape(alias.casefold())}"
+            rf"(?![a-z0-9_-])"
+        )
+        if pattern.search(text):
+            return alias
+    return ""
+
+
+def _matched_exact_code_alias(
+    code_tokens: set[str],
+    sample: ComponentSample,
+) -> str:
+    for alias in [
+        sample.label,
+        sample.model,
+        *sample.aliases,
+    ]:
+        alias = str(alias).strip()
+        if (
+            _is_strong_symbol_alias(alias)
+            and alias.casefold() in code_tokens
+        ):
+            return alias
+    return ""
+
+
+def _is_strong_symbol_alias(alias: str) -> bool:
+    return (
+        len(alias.strip()) >= 2
+        and bool(re.search(r"[a-zA-Z]", alias))
+    )
+
+
 def _group_open_symbols(
     symbols: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1005,7 +1223,18 @@ def _group_open_symbols(
         ).strip()
         normalized_label = _normalize_category_text(raw_label)
         normalized_type = _normalize_category_text(component_type)
-        if normalized_label in {"", "未知元件", "未知", "unknown"}:
+        code_tokens = _symbol_code_tokens(symbol)
+        if code_tokens:
+            # 代号(designator)的字母前缀即元件类别(GB/IEC：FU=熔断器、G=电感/电源、
+            # X=端子、K=继电器…)。按前缀分组：同类(FU1/FU2、G1/G2)合并为一类只修正
+            # 一次；不同类(电感 G* 与端子 X*)即使被开放识别误标成同一粗 label 也拆开，
+            # 避免一个 reference_id 被强加到混杂代号上。前缀比粗 label/type 更可靠，
+            # 故不再掺入易被模型写错的 type。
+            prefixes = sorted(
+                {_designator_prefix(token) for token in code_tokens}
+            )
+            key = ("prefix:" + ",".join(prefixes), "")
+        elif normalized_label in {"", "未知元件", "未知", "unknown"}:
             key = (
                 f"{normalized_label or '未知元件'}#{index}",
                 normalized_type,
@@ -1093,33 +1322,72 @@ def _deduplicate_open_symbols(
     for symbol in symbols:
         item = dict(symbol)
         item["regions"] = _normalize_regions(item.get("regions"))
+        item_regions = item["regions"]
+        item_codes = _symbol_code_tokens(item)
         duplicate: dict[str, Any] | None = None
-        for existing in kept:
-            if int(existing.get("page", 0)) != int(item.get("page", 0)):
-                continue
-            if not _same_symbol_identity(existing, item):
-                continue
-            existing_regions = _normalize_regions(
-                existing.get("regions")
-            )
-            item_regions = _normalize_regions(item.get("regions"))
-            if not any(
-                _same_instance(left, right)
-                for left in existing_regions
-                for right in item_regions
-            ):
-                continue
-            duplicate = existing
-            break
+        match_kind = ""
+        # 1. 代号(designator)是图纸中元件的唯一身份：同页同代号即同一物理实例，
+        #    即使整页视图与分块视图重映射后的边框并不重叠也应合并，避免跨视图虚增。
+        if item_codes:
+            for existing in kept:
+                if int(existing.get("page", 0)) != int(
+                    item.get("page", 0)
+                ):
+                    continue
+                if _symbol_code_tokens(existing) & item_codes:
+                    duplicate = existing
+                    match_kind = "code"
+                    break
+        # 2. 无代号时回退到区域重叠判断。
+        if duplicate is None:
+            for existing in kept:
+                if int(existing.get("page", 0)) != int(item.get("page", 0)):
+                    continue
+                if not _same_symbol_identity(existing, item):
+                    continue
+                if not any(
+                    _same_instance(left, right)
+                    for left in _normalize_regions(existing.get("regions"))
+                    for right in item_regions
+                ):
+                    continue
+                duplicate = existing
+                match_kind = "region"
+                break
+        if duplicate is None:
+            for existing in kept:
+                if int(existing.get("page", 0)) != int(
+                    item.get("page", 0)
+                ):
+                    continue
+                if any(
+                    _strong_overlap(left, right)
+                    for left in _normalize_regions(
+                        existing.get("regions")
+                    )
+                    for right in item_regions
+                ):
+                    duplicate = existing
+                    match_kind = "region"
+                    break
         if duplicate is None:
             kept.append(item)
             continue
-        merged_regions = _deduplicate_regions(
-            _normalize_regions(duplicate.get("regions"))
-            + _normalize_regions(item.get("regions"))
-        )
-        duplicate["regions"] = merged_regions
-        duplicate["occurrence_count"] = max(1, len(merged_regions))
+        if _confidence(item.get("confidence")) > _confidence(
+            duplicate.get("confidence")
+        ):
+            for key in ("raw_label", "label", "component_type"):
+                if str(item.get(key, "")).strip():
+                    duplicate[key] = item[key]
+        if match_kind == "code":
+            _merge_code_duplicate(duplicate, item)
+        else:
+            merged_regions = _deduplicate_regions(
+                _normalize_regions(duplicate.get("regions"))
+                + item_regions
+            )
+            duplicate["regions"] = merged_regions
+            duplicate["occurrence_count"] = max(1, len(merged_regions))
         duplicate["confidence"] = max(
             _confidence(duplicate.get("confidence")),
             _confidence(item.get("confidence")),
@@ -1131,6 +1399,117 @@ def _deduplicate_open_symbols(
         if not str(duplicate.get("evidence", "")).strip():
             duplicate["evidence"] = item.get("evidence", "")
     return kept
+
+
+def _merge_code_duplicate(
+    duplicate: dict[str, Any],
+    item: dict[str, Any],
+) -> None:
+    """合并同代号的两次检测。
+
+    代号唯一标识一个物理实例，而整页视图与分块视图会把同一实例重映射到
+    互不重叠的边框；若把两次边框直接累加会虚增实例数。这里改用“占用数/
+    区域更完整”的一次作为代表，从而保留单页多端子(如端子排 X01 占 3 个)的
+    真实数量，又不会让 FU、X01:1 等单一实例被重复计数。
+    """
+    dup_regions = _deduplicate_regions(
+        _normalize_regions(duplicate.get("regions"))
+    )
+    item_regions = _deduplicate_regions(
+        _normalize_regions(item.get("regions"))
+    )
+    dup_occ = _bounded_int(duplicate.get("occurrence_count"), 1, 10000, 1)
+    item_occ = _bounded_int(item.get("occurrence_count"), 1, 10000, 1)
+    dup_strength = (
+        max(dup_occ, len(dup_regions)),
+        len(dup_regions),
+        _confidence(duplicate.get("confidence")),
+    )
+    item_strength = (
+        max(item_occ, len(item_regions)),
+        len(item_regions),
+        _confidence(item.get("confidence")),
+    )
+    if item_strength > dup_strength:
+        chosen_regions, chosen_occ = item_regions, item_occ
+    else:
+        chosen_regions, chosen_occ = dup_regions, dup_occ
+    duplicate["regions"] = chosen_regions
+    duplicate["occurrence_count"] = (
+        len(chosen_regions) if chosen_regions else max(1, chosen_occ)
+    )
+
+
+def _absorb_block_terminals(
+    symbols: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """消除端子排块代号与其子端子代号之间的层级重复计数。
+
+    开放识别常把同一端子排既报成裸块代号(如 X01，整块占 3 个端子)，又报成
+    具体子端子(X01:1、X01:3、X01:5)。二者指向同一组物理端子，同时保留会重复
+    计数。规则：同页中裸块代号 P 与其子代号 P:* 同时出现时，以数量更多的一方
+    作为该端子排的代表——子端子更具体，数量不少于块时优先保留子端子并丢弃块；
+    若块统计到的端子数多于被单独标注的子端子，则保留块、把子端子代号并入块的
+    code 后丢弃子端子，避免漏数未被单独标注的端子。
+    """
+    children_by_parent: dict[tuple[int, str], list[dict[str, Any]]] = {}
+    for symbol in symbols:
+        page = _bounded_int(symbol.get("page"), 1, 10000, 1)
+        for token in _symbol_code_tokens(symbol):
+            if ":" in token:
+                parent = token.split(":", 1)[0].strip()
+                if parent:
+                    children_by_parent.setdefault(
+                        (page, parent), []
+                    ).append(symbol)
+    if not children_by_parent:
+        return symbols
+    drop: set[int] = set()
+    extra_codes: dict[int, str] = {}
+    for symbol in symbols:
+        tokens = _symbol_code_tokens(symbol)
+        if len(tokens) != 1:
+            continue
+        token = next(iter(tokens))
+        if ":" in token:
+            continue  # 子端子，不是裸块代号
+        page = _bounded_int(symbol.get("page"), 1, 10000, 1)
+        children = [
+            child
+            for child in children_by_parent.get((page, token), [])
+            if id(child) != id(symbol)
+        ]
+        if not children:
+            continue
+        block_occ = _bounded_int(
+            symbol.get("occurrence_count"), 1, 10000, 1
+        )
+        child_count = sum(
+            _bounded_int(child.get("occurrence_count"), 1, 10000, 1)
+            for child in children
+        )
+        if child_count >= block_occ:
+            drop.add(id(symbol))
+        else:
+            merged_code = str(symbol.get("code", ""))
+            for child in children:
+                drop.add(id(child))
+                merged_code = _merge_codes(
+                    merged_code, str(child.get("code", ""))
+                )
+            extra_codes[id(symbol)] = merged_code
+    if not drop and not extra_codes:
+        return symbols
+    result: list[dict[str, Any]] = []
+    for symbol in symbols:
+        sid = id(symbol)
+        if sid in drop:
+            continue
+        if sid in extra_codes:
+            symbol = dict(symbol)
+            symbol["code"] = extra_codes[sid]
+        result.append(symbol)
+    return result
 
 
 def _same_symbol_identity(
@@ -1309,158 +1688,6 @@ def _as_rgb(source: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def _layouts_by_page(
-    layouts: list[PageLayout] | None,
-) -> dict[int, PageLayout]:
-    return {layout.page: layout for layout in layouts or []}
-
-
-def _is_component_view(view: dict[str, object]) -> bool:
-    if view.get("route") == "component":
-        return True
-    return view.get("kind") == "tile"
-
-
-def _build_routed_page_views(
-    page_path: Path,
-    output_dir: Path,
-    page_number: int,
-    settings: Settings,
-    layout: PageLayout | None,
-    fallback_views: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    if (
-        not settings.layout_routing_enabled
-        or settings.layout_router_mode == "disabled"
-        or layout is None
-        or layout.fallback_required
-    ):
-        return fallback_views
-    component_regions = [
-        region
-        for region in layout.regions
-        if region.route == "component"
-        and region.confidence >= settings.layout_min_confidence
-    ]
-    if not component_regions:
-        return fallback_views if settings.layout_fallback_to_grid else []
-    region_dir = output_dir / "layout-regions"
-    views: list[dict[str, object]] = [
-        {
-            "path": page_path,
-            "kind": "full_page",
-            "tile": "full",
-            "bounds": [0.0, 0.0, 1000.0, 1000.0],
-            "route": "context",
-        }
-    ]
-    for index, region in enumerate(component_regions, start=1):
-        if _region_area(region.bounds) / 1_000_000.0 > settings.region_max_area_ratio:
-            nested = _build_region_tiles(
-                page_path,
-                region_dir,
-                region,
-                page_number,
-                index,
-                settings.tile_grid,
-                settings.region_tile_overlap,
-            )
-            views.extend(nested)
-            continue
-        crop_path = crop_region_image(page_path, region_dir, region)
-        views.append(
-            {
-                "path": crop_path,
-                "kind": "layout_region",
-                "tile": region.id,
-                "bounds": region.bounds,
-                "route": region.route,
-                "region_id": region.id,
-                "region_type": region.region_type,
-                "confidence": region.confidence,
-            }
-        )
-    return views
-
-
-def _build_region_tiles(
-    page_path: Path,
-    output_dir: Path,
-    region: Any,
-    page_number: int,
-    region_index: int,
-    grid: int,
-    overlap: float,
-) -> list[dict[str, object]]:
-    crop_path = crop_region_image(page_path, output_dir, region)
-    local_views = _build_page_views(
-        crop_path,
-        output_dir / f"{region.id}-tiles",
-        page_number,
-        max(1, grid),
-        overlap,
-    )
-    tiled = [view for view in local_views if view["kind"] == "tile"]
-    results: list[dict[str, object]] = []
-    for index, view in enumerate(tiled, start=1):
-        local_bounds = view["bounds"]
-        assert isinstance(local_bounds, list)
-        bounds = [
-            round(
-                float(region.bounds[0])
-                + float(local_bounds[0])
-                / 1000
-                * (float(region.bounds[2]) - float(region.bounds[0])),
-                4,
-            ),
-            round(
-                float(region.bounds[1])
-                + float(local_bounds[1])
-                / 1000
-                * (float(region.bounds[3]) - float(region.bounds[1])),
-                4,
-            ),
-            round(
-                float(region.bounds[0])
-                + float(local_bounds[2])
-                / 1000
-                * (float(region.bounds[2]) - float(region.bounds[0])),
-                4,
-            ),
-            round(
-                float(region.bounds[1])
-                + float(local_bounds[3])
-                / 1000
-                * (float(region.bounds[3]) - float(region.bounds[1])),
-                4,
-            ),
-        ]
-        results.append(
-            {
-                "path": view["path"],
-                "kind": "layout_region_tile",
-                "tile": f"{region.id}-{region_index}-{index}",
-                "bounds": bounds,
-                "route": "component",
-                "region_id": region.id,
-                "region_type": region.region_type,
-                "confidence": region.confidence,
-            }
-        )
-    return results or [
-        {
-            "path": crop_path,
-            "kind": "layout_region",
-            "tile": region.id,
-            "bounds": region.bounds,
-            "route": "component",
-            "region_id": region.id,
-            "region_type": region.region_type,
-            "confidence": region.confidence,
-        }
-    ]
-
-
 def _build_page_views(
     page_path: Path,
     output_dir: Path,
@@ -1468,8 +1695,10 @@ def _build_page_views(
     grid: int,
     overlap: float,
 ) -> list[dict[str, object]]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    views: list[dict[str, object]] = [
+    # 第一遍“整页视图”：提供全局上下文，作为合并去重时的基准(canonical)。
+    # grid/overlap 在此忽略——分块由 _build_tile_views 单独负责，便于把整页与
+    # 分块清晰分成两遍。
+    return [
         {
             "path": page_path,
             "kind": "full_page",
@@ -1477,55 +1706,67 @@ def _build_page_views(
             "bounds": [0.0, 0.0, 1000.0, 1000.0],
         }
     ]
+
+
+def _build_tile_views(
+    page_path: Path,
+    output_dir: Path,
+    page_number: int,
+    grid: int,
+    overlap: float,
+) -> list[dict[str, object]]:
+    # 第二遍“分块视图”：把整页切成 grid×grid 的高分辨率子图，专门补识别整页
+    # 视图里因缩放丢失的小/细/浅符号(如电感 G1/G2)。返回的分块结果会与整页结果
+    # 一起经 _deduplicate_open_symbols 按代号(code)合并：同代号视为同一实例只计
+    # 一次，整页未发现的小符号则作为新实例补入。grid<=1 时不分块。
     if grid <= 1:
-        return views
-    with Image.open(page_path) as source:
-        image = _as_rgb(source)
-        x_ranges = _tile_ranges(image.width, grid, overlap)
-        y_ranges = _tile_ranges(image.height, grid, overlap)
-        for row, (top, bottom) in enumerate(y_ranges):
-            for column, (left, right) in enumerate(x_ranges):
-                target = (
-                    output_dir
-                    / f"page-{page_number}-tile-{row + 1}-{column + 1}.png"
-                )
-                image.crop((left, top, right, bottom)).save(target)
-                views.append(
-                    {
-                        "path": target,
-                        "kind": "tile",
-                        "tile": f"{row + 1}-{column + 1}",
-                        "bounds": [
-                            round(left / image.width * 1000, 4),
-                            round(top / image.height * 1000, 4),
-                            round(right / image.width * 1000, 4),
-                            round(bottom / image.height * 1000, 4),
-                        ],
-                    }
-                )
+        return []
+    image = _as_rgb(Image.open(page_path))
+    width, height = image.size
+    if width <= 0 or height <= 0:
+        return []
+    tiles_dir = output_dir / "tiles"
+    tiles_dir.mkdir(parents=True, exist_ok=True)
+    views: list[dict[str, object]] = []
+    x_spans = _tile_spans(width, grid, overlap)
+    y_spans = _tile_spans(height, grid, overlap)
+    for row, (top, bottom) in enumerate(y_spans):
+        for col, (left, right) in enumerate(x_spans):
+            tile_name = f"r{row}c{col}"
+            tile_path = (
+                tiles_dir / f"page{page_number}_tile_{tile_name}.png"
+            )
+            image.crop((left, top, right, bottom)).save(tile_path)
+            views.append(
+                {
+                    "path": tile_path,
+                    "kind": "tile",
+                    "tile": tile_name,
+                    "bounds": [
+                        round(left / width * 1000, 4),
+                        round(top / height * 1000, 4),
+                        round(right / width * 1000, 4),
+                        round(bottom / height * 1000, 4),
+                    ],
+                }
+            )
     return views
 
 
-def _tile_ranges(
+def _tile_spans(
     length: int,
     grid: int,
     overlap: float,
 ) -> list[tuple[int, int]]:
-    tile_length = min(
-        length,
-        math.ceil(length / (grid - overlap * (grid - 1))),
-    )
-    if grid == 1:
-        return [(0, length)]
-    maximum_start = max(0, length - tile_length)
-    starts = [
-        round(index * maximum_start / (grid - 1))
-        for index in range(grid)
-    ]
-    return [
-        (start, min(length, start + tile_length))
-        for start in starts
-    ]
+    base = length / grid
+    pad = base * max(0.0, overlap)
+    spans: list[tuple[int, int]] = []
+    for index in range(grid):
+        start = max(0, int(round(index * base - pad)))
+        end = min(length, int(round((index + 1) * base + pad)))
+        if end > start:
+            spans.append((start, end))
+    return spans
 
 
 def _remap_component_regions(
@@ -1631,6 +1872,22 @@ def _same_instance(
     iou = intersection / union if union else 0.0
     containment = intersection / min(left_area, right_area)
     return iou >= 0.35 or containment >= 0.7
+
+
+def _strong_overlap(
+    left: list[float],
+    right: list[float],
+) -> bool:
+    intersection = _intersection_area(left, right)
+    if intersection <= 0:
+        return False
+    left_area = _region_area(left)
+    right_area = _region_area(right)
+    union = left_area + right_area - intersection
+    iou = intersection / union if union else 0.0
+    smaller = min(left_area, right_area)
+    containment = intersection / smaller if smaller else 0.0
+    return iou >= 0.6 or containment >= 0.85
 
 
 def _intersection_area(

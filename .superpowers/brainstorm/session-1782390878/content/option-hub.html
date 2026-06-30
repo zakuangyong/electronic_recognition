@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>原型方向入口</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: rgba(255,255,255,0.86);
+      --line: #d7dfe8;
+      --text: #223446;
+      --muted: #667b90;
+      --accent: #2f6fed;
+      --accent-soft: rgba(47,111,237,0.1);
+      --shadow: 0 20px 48px rgba(25, 46, 73, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(47,111,237,0.08), transparent 20%),
+        linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.84)),
+        var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+    .shell {
+      width: min(1160px, 100%);
+      background: var(--surface);
+      border: 1px solid rgba(215,223,232,0.95);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 12px;
+      color: #70869b;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 0;
+      font-size: 38px;
+    }
+    .intro {
+      margin: 14px 0 24px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 860px;
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 300px;
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.94);
+      text-decoration: none;
+      color: inherit;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    .card:hover {
+      border-color: rgba(47,111,237,0.24);
+      transform: translateY(-2px);
+    }
+    .label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 54px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    ul {
+      margin: 18px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+    .cta {
+      margin-top: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <p class="eyebrow">Prototype Navigator</p>
+    <h1>三套方向改成独立全尺寸预览</h1>
+    <div class="intro">
+      每套方案现在都是一个独立 HTML，并且在单页内按正常比例展示“识别工作台、知识库管理、图纸检索”三块完整画面。这样你可以真正判断空间分配、首屏压力、信息层次和整体气质，而不是看缩略卡片。
+    </div>
+
+    <div class="grid">
+      <a class="card" href="/files/option-a-full.html">
+        <div>
+          <div class="label">A</div>
+          <h2>中枢控制台</h2>
+          <p>统一平台骨架，左导航 + 中作业区 + 右状态区，最适合作为后续产品化基线。</p>
+          <ul>
+            <li>强调稳定和秩序</li>
+            <li>三页结构最统一</li>
+            <li>Vue 落地成本最低</li>
+          </ul>
+        </div>
+        <div class="cta">查看完整方案</div>
+      </a>
+
+      <a class="card" href="/files/option-b-full.html">
+        <div>
+          <div class="label">B</div>
+          <h2>流程编排台</h2>
+          <p>把页面做成阶段推进模式，强调步骤感、下一动作和任务闭环，更适合新用户理解流程。</p>
+          <ul>
+            <li>识别工作台表现最好</li>
+            <li>教学感更强</li>
+            <li>高频分析场景稍弱</li>
+          </ul>
+        </div>
+        <div class="cta">查看完整方案</div>
+      </a>
+
+      <a class="card" href="/files/option-c-full.html">
+        <div>
+          <div class="label">C</div>
+          <h2>高密度分析屏</h2>
+          <p>把筛选、结果、预览和调试都压进首屏，最像专业分析工具，尤其适合检索与规则维护。</p>
+          <ul>
+            <li>专业工具感最强</li>
+            <li>检索页最有优势</li>
+            <li>工作台首屏压力更大</li>
+          </ul>
+        </div>
+        <div class="cta">查看完整方案</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
