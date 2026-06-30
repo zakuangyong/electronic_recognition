@@ -16,6 +16,8 @@ import { fetchConfig } from '../api/config'
 
 import '../app/styles/diff.css'
 
+defineOptions({ name: 'WorkbenchView' })
+
 const task = ref<AnalyzeResponse | null>(null)
 const activeTab = ref('component-identification')
 const message = ref<{ type: 'info' | 'success' | 'error'; text: string } | null>(

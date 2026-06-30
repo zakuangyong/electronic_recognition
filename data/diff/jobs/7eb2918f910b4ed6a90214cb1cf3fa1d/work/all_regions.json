@@ -1,0 +1,28 @@
+[
+  {
+    "page": 1,
+    "offset_px": [
+      23,
+      -92
+    ],
+    "width_px": 2339,
+    "height_px": 1653,
+    "regions": [
+      {
+        "region_id": 1,
+        "bbox_px": [
+          298,
+          666,
+          1507,
+          1600
+        ],
+        "old_crop": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\7eb2918f910b4ed6a90214cb1cf3fa1d\\work\\diff\\crops\\page_001_region_001_old.png",
+        "new_crop": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\7eb2918f910b4ed6a90214cb1cf3fa1d\\work\\diff\\crops\\page_001_region_001_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      }
+    ]
+  }
+]

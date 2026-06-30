@@ -1,0 +1,38 @@
+{
+  "old_source": "old.pdf",
+  "new_source": "new.pdf",
+  "old_pdf": "old.pdf",
+  "new_pdf": "new.pdf",
+  "generated_at": "2026-06-30T21:51:56.788475",
+  "total_pages": 1,
+  "total_regions": 1,
+  "text_extracted_regions": 0,
+  "pages": [
+    {
+      "page": 1,
+      "offset_px": [
+        23,
+        -92
+      ],
+      "region_count": 1,
+      "regions": [
+        {
+          "region_id": 1,
+          "bbox_px": [
+            298,
+            666,
+            1507,
+            1600
+          ],
+          "change_type": "visual_change",
+          "old_text": "",
+          "new_text": "",
+          "old_crop": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\7eb2918f910b4ed6a90214cb1cf3fa1d\\work\\diff\\crops\\page_001_region_001_old.png",
+          "new_crop": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\7eb2918f910b4ed6a90214cb1cf3fa1d\\work\\diff\\crops\\page_001_region_001_new.png",
+          "confidence": 0.85,
+          "review_status": "pending"
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,8 @@ import { fetchConfig } from '../api/config'
 
 import '../app/styles/diff.css'
 
+defineOptions({ name: 'DrawingCorrectionView' })
+
 type Message = { type: 'info' | 'success' | 'error'; text: string }
 
 type BomEntry = {

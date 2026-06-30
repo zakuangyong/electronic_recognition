@@ -13,7 +13,7 @@ const rebuildMode = ref('all')
 const queryInput = ref<HTMLInputElement | null>(null)
 
 const quickTags = [
-  '热继驱动',
+  '热继电器',
   '三极断路器',
   '接触器',
   '热继保护',

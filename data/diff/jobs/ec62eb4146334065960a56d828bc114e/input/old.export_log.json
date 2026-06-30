@@ -1,0 +1,12 @@
+{
+  "source": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\ec62eb4146334065960a56d828bc114e\\input\\机械制图8.dwg",
+  "output": "E:\\work\\proj\\electronic_recognition\\data\\diff\\jobs\\ec62eb4146334065960a56d828bc114e\\input\\old.pdf",
+  "tool": "AutoCAD COM",
+  "tool_version": "25.1s (LMS Tech)",
+  "export_time": "2026-06-30T21:45:37.623176",
+  "success": false,
+  "error": "(-2147352567, '发生意外。', (0, None, None, None, 0, -2147024809), None)",
+  "pages": 3,
+  "page_size": null,
+  "orientation": null
+}
