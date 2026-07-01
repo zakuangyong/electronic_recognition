@@ -3,13 +3,13 @@ import os
 
 client = OpenAI(
     # 如果没有配置环境变量，请用阿里云百炼API Key替换：api_key="sk-xxx"
-    api_key="sk-73b7cb20ce7549c89ee986b1dd182429",
-    base_url="https://ws-t7fdbpxscwu1x61u.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+    api_key="sk-2c920ac93f018983-ow6k40-b29a020a",
+    base_url="http://localhost:20128/v1",
 )
 
 messages = [{"role": "user", "content": "你是谁"}]
 completion = client.chat.completions.create(
-    model="qwen3.5-397b-a17b",  # 您可以按需更换为其它深度思考模型
+    model="qwen/qwen3.5-397b-a17b",  # 您可以按需更换为其它深度思考模型
     messages=messages,
     extra_body={"enable_thinking": True},
     stream=True

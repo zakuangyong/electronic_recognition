@@ -24,4 +24,20 @@ describe('styles theme tokens', () => {
     expect(css).toMatch(/\.diff-a-root\s+\.workbench-preview-tabs\s+\.title-block-table[\s\S]*background:\s*rgba\(/)
     expect(css).toMatch(/\.diff-a-root\s+\.workbench-preview-tabs\s+\.component-table\s+th[\s\S]*background:\s*rgba\(/)
   })
+
+  it('defines adapted correction comparison layout styles', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/app/styles/styles.css'), 'utf8')
+
+    expect(css).toMatch(/\.drawing-correction-split\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.18fr\)\s+minmax\(420px,\s*0\.82fr\)/)
+    expect(css).toMatch(/\.drawing-correction-list\s*\{[\s\S]*overflow-y:\s*auto/)
+    expect(css).toMatch(/\.drawing-correction-list\s+\.component-table-wrap\s*\{[\s\S]*overflow-x:\s*auto/)
+  })
+
+  it('keeps correction comparison tables on dark surfaces', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/app/styles/diff.css'), 'utf8')
+
+    expect(css).toMatch(/\.diff-a-root\s+\.drawing-correction-list\s+\.label-compare-card[\s\S]*background:\s*rgba\(/)
+    expect(css).toMatch(/\.diff-a-root\s+\.drawing-correction-list\s+\.component-table-wrap[\s\S]*background:\s*rgba\(/)
+    expect(css).toMatch(/\.diff-a-root\s+\.drawing-correction-list\s+\.component-table\s+th[\s\S]*background:\s*rgba\(/)
+  })
 })

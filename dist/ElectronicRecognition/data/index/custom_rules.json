@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "coil_contact_group",
+      "name": "继电器/接触器线圈与辅助触点组合",
+      "description": "相同设备代号同时出现线圈和一个或多个辅助触点时，归并为同一继电器或接触器的功能组合。",
+      "image_path": "assets/rules/coil-contact-group.png",
+      "engine": "builtin",
+      "enabled": true,
+      "scope": "document",
+      "confidence": 0.98,
+      "members": [
+        {
+          "role": "线圈",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "辅助触点",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        }
+      ],
+      "aliases": [
+        "线圈触点组合",
+        "继电器组合",
+        "接触器组合",
+        "coil contact group"
+      ],
+      "notes": "使用内置判定器，要求线圈与触点具有相同基础代号。",
+      "source": "项目原有组合规则 coil_contact_group"
+    },
+    {
+      "id": "motor_start_protection",
+      "name": "电动机启动与保护组合",
+      "description": "由断路器、接触器、热继电器或过载保护器及电动机/风机负载共同构成的启动保护回路。",
+      "image_path": "assets/rules/motor-start-protection.png",
+      "engine": "builtin",
+      "enabled": true,
+      "scope": "document",
+      "confidence": 0.96,
+      "members": [
+        {
+          "role": "短路保护",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "接触器控制",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "过载保护",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "电动机或风机负载",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        }
+      ],
+      "aliases": [
+        "电机启动回路",
+        "风机启动保护",
+        "断路器接触器热继电器组合",
+        "motor start protection"
+      ],
+      "notes": "使用内置判定器，并结合图签、控制信号和元件表中的负载语义。",
+      "source": "项目原有组合规则 motor_start_protection"
+    },
+    {
+      "id": "start_stop_indicator",
+      "name": "启停控制及状态指示组合",
+      "description": "启动命令、停止命令、继电控制和运行/故障状态指示共同构成的启停控制链。",
+      "image_path": "assets/rules/start-stop-indicator.png",
+      "engine": "builtin",
+      "enabled": true,
+      "scope": "document",
+      "confidence": 0.94,
+      "members": [
+        {
+          "role": "启动命令",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "停止命令",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "继电控制",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        },
+        {
+          "role": "状态反馈",
+          "min_quantity": 1,
+          "code_patterns": [],
+          "label_keywords": []
+        }
+      ],
+      "aliases": [
+        "启停控制组合",
+        "启动停止指示回路",
+        "红黄绿状态指示",
+        "start stop indicator"
+      ],
+      "notes": "使用内置判定器，并结合元件表中的启动/停止角色和指示灯语义。",
+      "source": "项目原有组合规则 start_stop_indicator"
+    },
+    {
+      "id": "user-custom-combination-1",
+      "name": "自定义组合1",
+      "description": "断路器状态指示组合，由 QF 辅助触点和 HR、HY、HG 三个指示灯支路组成，用于表示合闸、故障和分闸状态。",
+      "image_path": "assets/rules/user-custom-combination-1.png",
+      "engine": "declarative",
+      "enabled": true,
+      "scope": "same_page",
+      "confidence": 0.97,
+      "members": [
+        {
+          "role": "QF辅助触点",
+          "min_quantity": 3,
+          "code_patterns": [
+            "^QF\\d*$"
+          ],
+          "label_keywords": [
+            "辅助触点"
+          ]
+        },
+        {
+          "role": "合闸指示灯",
+          "min_quantity": 1,
+          "code_patterns": [
+            "^HR\\d*$"
+          ],
+          "label_keywords": []
+        },
+        {
+          "role": "故障指示灯",
+          "min_quantity": 1,
+          "code_patterns": [
+            "^HY\\d*$"
+          ],
+          "label_keywords": []
+        },
+        {
+          "role": "分闸指示灯",
+          "min_quantity": 1,
+          "code_patterns": [
+            "^HG\\d*$"
+          ],
+          "label_keywords": []
+        }
+      ],
+      "aliases": [
+        "断路器状态指示回路",
+        "断路器三色指示",
+        "QF辅助触点与指示灯组合",
+        "HR HY HG"
+      ],
+      "notes": "规则层样本，不参与单元件视觉参考图召回。",
+      "source": "A20337_1406_项目原理图_KD-4.pdf，第 1 页"
+    }
+  ]
+}

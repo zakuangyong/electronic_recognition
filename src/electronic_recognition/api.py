@@ -49,6 +49,7 @@ from .search.sqlite_store import DrawingSearchStore
 from .diff.response import build_diff_result_payload
 from .diff.service import DrawingDiffService
 from .diff.storage import DiffJobStorage
+from .runtime import project_root, web_dist_dir
 
 
 @asynccontextmanager
@@ -76,7 +77,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 PACKAGE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = PACKAGE_DIR.parents[1]
+PROJECT_ROOT = project_root()
 KNOWLEDGE_PATH = PROJECT_ROOT / "data" / "index" / "components.json"
 CUSTOM_RULES_PATH = PROJECT_ROOT / "data" / "index" / "custom_rules.json"
 SEARCH_DEMO_QUERIES_PATH = PROJECT_ROOT / "data" / "search" / "demo_queries.json"
@@ -1418,6 +1419,46 @@ def _diff_storage() -> DiffJobStorage:
 
 def _diff_service() -> DrawingDiffService:
     return DrawingDiffService()
+
+
+def enable_production_frontend(
+    dist_dir: str | Path | None = None,
+    api_app: FastAPI | None = None,
+) -> Path:
+    """Serve the built Vue SPA from the API app for packaged runs.
+
+    This is intentionally opt-in so the development API keeps returning 404
+    for frontend routes while Vite handles the UI.
+    """
+    root = Path(dist_dir).resolve() if dist_dir else web_dist_dir()
+    index_path = root / "index.html"
+    if not index_path.is_file():
+        raise FileNotFoundError(index_path)
+    target_app = api_app or app
+
+    @target_app.get("/", include_in_schema=False)
+    def _frontend_index() -> FileResponse:
+        return FileResponse(index_path)
+
+    @target_app.get("/{full_path:path}", include_in_schema=False)
+    def _frontend_asset_or_route(full_path: str) -> FileResponse:
+        if _is_backend_path(full_path):
+            raise HTTPException(404, "Not Found")
+        candidate = (root / full_path).resolve(strict=False)
+        try:
+            candidate.relative_to(root)
+        except ValueError as exc:
+            raise HTTPException(404, "Not Found") from exc
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(index_path)
+
+    return root
+
+
+def _is_backend_path(path_value: str) -> bool:
+    first = path_value.strip("/").split("/", 1)[0]
+    return first in {"api", "analyze", "health", "docs", "redoc", "openapi.json"}
 
 
 def _read_search_mapping(path: Path) -> dict[str, float]:

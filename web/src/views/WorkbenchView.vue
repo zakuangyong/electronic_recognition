@@ -88,9 +88,89 @@ const controlSignalConfiguration = computed(() => objectPayload(
 ))
 const componentTable = computed(() => objectPayload('component_table', result.value?.component_table))
 
+function payloadCount(payload: unknown): number {
+  if (Array.isArray(payload)) return payload.length
+  if (payload && typeof payload === 'object') return Object.keys(payload as Record<string, unknown>).length
+  return 0
+}
+
+function payloadHasValue(payload: unknown): boolean {
+  if (payload == null) return false
+  if (Array.isArray(payload)) return payload.length > 0
+  if (typeof payload === 'object') return Object.keys(payload as Record<string, unknown>).length > 0
+  return true
+}
+
+function stepLogMessage(name: string, payload: unknown): string | null {
+  const count = payloadCount(payload)
+  const messages: Record<string, string> = {
+    document: '图纸解析完成，开始提取页面与文本。',
+    title_block: '图签信息提取完成。',
+    control_signal_configuration: '控制与信号配置提取完成。',
+    component_table: '图纸标签表提取完成。',
+    page_quality: `页面质量分析完成，共 ${count} 页。`,
+    layout_regions: `版面区域分析完成，共 ${count} 条记录。`,
+    structured_region_extraction: `结构化区域提取完成，共 ${count} 条记录。`,
+    open_symbols: `开放识别已发现 ${count} 条元器件记录。`,
+    open_recognition_tiles: count
+      ? `图纸整页识别切片已处理 ${count} 条记录。`
+      : '已准备图纸整页图，准备调用视觉模型。',
+    open_categories: `开放识别类别已聚合，共 ${count} 种。`,
+    rag_corrections: `知识库名称修正已处理 ${count} 种元器件。`,
+    detected_components: `元器件识别完成，共形成 ${count} 条结果。`,
+    detected_combinations: `组合规则判断完成，共识别 ${count} 个组合。`,
+    preview_pages: `预览页面生成完成，共 ${count} 页。`,
+    warnings: `识别过程产生 ${count} 条提示。`,
+    meta: '运行元信息已生成。',
+  }
+  if (messages[name]) return messages[name]
+  if (!payloadHasValue(payload)) return null
+  return `步骤 ${name} 已完成。`
+}
+
+function currentLocalLogTime(): string {
+  const date = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const offsetMinutes = -date.getTimezoneOffset()
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-'
+  const absoluteOffset = Math.abs(offsetMinutes)
+  const offsetHours = Math.floor(absoluteOffset / 60)
+  const offsetRestMinutes = absoluteOffset % 60
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${offsetSign}${pad(offsetHours)}:${pad(offsetRestMinutes)}`
+}
+
+function fallbackStepLogTime(entries: LogEntry[]): string {
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const time = entries[index]?.time
+    if (typeof time === 'string' && time.trim()) return time
+  }
+  return currentLocalLogTime()
+}
+
+function stepSyntheticLogEntries(time: string): LogEntry[] {
+  return Object.entries(stepPayloads.value)
+    .filter(([name]) => name !== 'recognition_log')
+    .flatMap(([name, payload]) => {
+      const message = stepLogMessage(name, payload)
+      if (!message) return []
+      return [{
+        time,
+        stage: `step:${name}`,
+        level: 'info',
+        message,
+      }]
+    })
+}
+
 const logEntries = computed<LogEntry[]>(() => {
-  const raw = (steps.value?.steps as Record<string, unknown> | undefined)?.recognition_log
-  return Array.isArray(raw) ? (raw as LogEntry[]) : []
+  const raw = stepPayloads.value.recognition_log
+  const entries = Array.isArray(raw) ? (raw as LogEntry[]) : []
+  const seenStages = new Set(entries.map((entry) => entry.stage))
+  const synthetic = stepSyntheticLogEntries(fallbackStepLogTime(entries)).filter((entry) => {
+    const backendStage = entry.stage.replace(/^step:/, '')
+    return !seenStages.has(backendStage) && !seenStages.has(entry.stage)
+  })
+  return [...entries, ...synthetic]
 })
 
 function setMessage(type: 'info' | 'success' | 'error', text: string) {

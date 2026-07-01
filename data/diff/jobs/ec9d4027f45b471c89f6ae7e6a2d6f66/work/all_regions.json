@@ -1,0 +1,103 @@
+[
+  {
+    "page": 1,
+    "offset_px": [
+      0,
+      0
+    ],
+    "width_px": 3308,
+    "height_px": 2339,
+    "regions": [
+      {
+        "region_id": 1,
+        "bbox_px": [
+          473,
+          1491,
+          1173,
+          1735
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_001_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_001_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      },
+      {
+        "region_id": 2,
+        "bbox_px": [
+          367,
+          1617,
+          433,
+          1645
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_002_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_002_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      },
+      {
+        "region_id": 3,
+        "bbox_px": [
+          791,
+          2080,
+          811,
+          2115
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_003_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_003_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      },
+      {
+        "region_id": 4,
+        "bbox_px": [
+          791,
+          2158,
+          811,
+          2193
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_004_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_004_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      },
+      {
+        "region_id": 5,
+        "bbox_px": [
+          791,
+          2237,
+          811,
+          2272
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_005_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_005_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      },
+      {
+        "region_id": 6,
+        "bbox_px": [
+          2936,
+          2246,
+          2956,
+          2281
+        ],
+        "old_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_006_old.png",
+        "new_crop": "D:\\project\\electronic_recognition\\data\\diff\\jobs\\ec9d4027f45b471c89f6ae7e6a2d6f66\\work\\diff\\crops\\page_001_region_006_new.png",
+        "old_text": "",
+        "old_text_source": "none",
+        "new_text": "",
+        "new_text_source": "none"
+      }
+    ]
+  }
+]

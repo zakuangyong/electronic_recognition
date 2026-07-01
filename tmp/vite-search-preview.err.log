@@ -1,0 +1,15 @@
+[2m13:41:20[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:8892
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m16:01:32[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:8892
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m16:13:00[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:8892
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m16:32:32[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:8892
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m17:12:25[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:8892
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)

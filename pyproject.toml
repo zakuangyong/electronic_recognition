@@ -29,6 +29,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+build = ["pyinstaller>=6.0"]
 layout = []
 ocr = []
 # Kept for backward compatibility (e.g. `pip install -e ".[search]"`); the
@@ -38,6 +39,7 @@ search = []
 [project.scripts]
 electronic-recognition = "electronic_recognition.cli:main"
 er = "electronic_recognition.cli:main"
+er-production = "electronic_recognition.production:main"
 er-rebuild-search-index = "electronic_recognition.search.rebuild:main"
 
 [tool.setuptools.packages.find]

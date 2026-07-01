@@ -1216,13 +1216,22 @@ button:disabled,
   gap: 8px;
   align-items: start;
 }
-.component-identification-preview {
+.drawing-correction-split {
+  min-height: 404px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(420px, 0.82fr);
+  gap: 8px;
+  align-items: start;
+}
+.component-identification-preview,
+.drawing-correction-preview {
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(216, 224, 232, 0.9);
   border-radius: 16px;
 }
-.component-identification-side {
+.component-identification-side,
+.drawing-correction-side {
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1243,7 +1252,8 @@ button:disabled,
 .component-identification-title b {
   font-size: 13px;
 }
-.component-identification-list {
+.component-identification-list,
+.drawing-correction-list {
   min-height: 0;
   padding: 10px;
   display: grid;
@@ -1251,6 +1261,19 @@ button:disabled,
   overflow-y: auto;
   overscroll-behavior: contain;
   max-height: clamp(360px, calc(100dvh - 420px), 640px);
+}
+.drawing-correction-list {
+  gap: 10px;
+}
+.drawing-correction-list .component-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.drawing-correction-list .label-compare-table {
+  min-width: 560px;
+}
+.drawing-correction-list .label-compare-card {
+  min-width: 0;
 }
 .tab-bar--dense {
   gap: 6px;
@@ -1477,6 +1500,11 @@ button:disabled,
   .dense-grid,
   .metric-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 1480px) {
+  .drawing-correction-split {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 920px) {

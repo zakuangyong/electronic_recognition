@@ -1085,6 +1085,97 @@
   color: rgba(226, 232, 240, 0.9);
 }
 
+.diff-a-root .drawing-correction-side {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.diff-a-root .drawing-correction-list {
+  max-height: none;
+}
+
+.diff-a-root .drawing-correction-list .label-compare-card,
+.diff-a-root .drawing-correction-list .component-table-wrap {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(3, 8, 16, 0.44);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-summary {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-summary article {
+  border-right-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-summary span,
+.diff-a-root .drawing-correction-list .label-compare-title-grid span {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-summary strong {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-section {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-section h4 {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-title-grid div {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.diff-a-root .drawing-correction-list .label-compare-title-grid strong {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.diff-a-root .drawing-correction-list .component-table {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.diff-a-root .drawing-correction-list .component-table th,
+.diff-a-root .drawing-correction-list .component-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.diff-a-root .drawing-correction-list .component-table th {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.diff-a-root .drawing-correction-list .component-table td {
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.diff-a-root .drawing-correction-list .component-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.diff-a-root .drawing-correction-list .component-table tbody tr:hover td {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.diff-a-root .drawing-correction-list .result-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.diff-a-root .drawing-correction-list pre {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(3, 8, 16, 0.62);
+  color: rgba(226, 232, 240, 0.9);
+}
+
 .diff-a-root .recognition-loading-panel--wide {
   border-color: rgba(255, 255, 255, 0.12);
   background:

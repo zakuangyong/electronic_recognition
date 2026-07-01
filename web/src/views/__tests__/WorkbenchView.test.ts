@@ -451,4 +451,117 @@ describe('WorkbenchView', () => {
     expect(wrapper.text()).toContain('START')
     expect(wrapper.text()).toContain('X1')
   })
+
+  it('shows completed step payloads in the runtime log', async () => {
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/config')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify({
+            model: 'gpt-4.1',
+            api_key_configured: true,
+          })),
+        })
+      }
+      if (url.endsWith('/analyze')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify({
+            task_id: 'demo-result',
+            result_id: 'demo-result',
+            status: 'running',
+            result_url: '/results/demo-result',
+            steps_url: '/api/results/demo-result/steps',
+          })),
+        })
+      }
+      if (url.endsWith('/api/results/demo-result')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify({
+            result_id: 'demo-result',
+            document: 'demo.pdf',
+            status: 'running',
+            detected_components: [],
+            detected_combinations: [],
+            title_block: {},
+            control_signal_configuration: {},
+            component_table: {},
+            recognition_steps: {},
+            warnings: [],
+            meta: {},
+            preview_pages: [],
+          })),
+        })
+      }
+      if (url.endsWith('/api/results/demo-result/steps')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify({
+            result_id: 'demo-result',
+            status: 'running',
+            steps: {
+              recognition_log: [
+                {
+                  time: '2026-06-25T17:07:41+08:00',
+                  stage: 'vision_model',
+                  level: 'info',
+                  message: '视觉模型调用准备完成。',
+                },
+              ],
+              page_quality: [{ page: 1 }],
+              layout_regions: [{ page: 1 }, { page: 2 }],
+              detected_components: [
+                { code: 'KM1', label: 'contactor' },
+                { code: 'FU1', label: 'fuse' },
+              ],
+            },
+            files: {},
+            missing: [],
+          })),
+        })
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: () => Promise.resolve(JSON.stringify({ detail: 'not found' })),
+      })
+    }))
+
+    const router = createTestRouter()
+    await router.push('/workbench')
+    await router.isReady()
+
+    const wrapper = mount(WorkbenchView, {
+      global: { plugins: [router] },
+    })
+
+    const file = new File(['demo'], 'demo.pdf', { type: 'application/pdf' })
+    const fileInput = wrapper.find('input[type="file"]')
+    Object.defineProperty(fileInput.element, 'files', {
+      value: [file],
+      configurable: true,
+    })
+
+    await fileInput.trigger('change')
+    await wrapper.find('form.toolbar-upload').trigger('submit')
+    await flushPromises()
+    await flushPromises()
+
+    await wrapper.find('.log-panel-head').trigger('click')
+
+    expect(wrapper.text()).toContain('页面质量分析完成，共 1 页。')
+    expect(wrapper.text()).toContain('版面区域分析完成，共 2 条记录。')
+    expect(wrapper.text()).toContain('元器件识别完成，共形成 2 条结果。')
+
+    const logTimes = wrapper.findAll('.log-time').map((node) => node.text())
+    expect(logTimes.length).toBeGreaterThanOrEqual(4)
+    expect(logTimes.every(Boolean)).toBe(true)
+    expect(logTimes.filter((time) => time === '17:07:41').length).toBeGreaterThanOrEqual(4)
+  })
 })

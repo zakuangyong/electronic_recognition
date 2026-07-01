@@ -456,18 +456,18 @@ onMounted(async () => {
               <p>上传图纸并开始识别后，这里会展示预览和 BOM 对比结果。</p>
             </div>
 
-            <div v-else class="component-identification-split">
-              <div class="preview-box preview-box--hero component-identification-preview">
+            <div v-else class="drawing-correction-split">
+              <div class="preview-box preview-box--hero drawing-correction-preview">
                 <DrawingPreview :pages="previewPages" :components="components" />
               </div>
 
-              <section class="component-identification-side">
+              <section class="drawing-correction-side">
                 <div class="component-identification-title">
                   <b>纠错对比</b>
                   <span class="label">components ↔ bom</span>
                 </div>
 
-                <div class="component-identification-list" aria-label="纠错对比面板">
+                <div class="drawing-correction-list" aria-label="纠错对比面板">
                   <div class="label-compare-card">
                     <div class="label-compare-summary">
                       <article>
